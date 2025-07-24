@@ -116,7 +116,7 @@
     });
     
     // Handle editor changes
-    editor.addEventListener('input', () => {
+    editor.addEventListener('input', (e) => {
         if (!isInternalUpdate) {
             const markdown = htmlToMarkdown(editor);
             currentMarkdown = markdown;
@@ -124,6 +124,69 @@
                 type: 'edit',
                 text: markdown
             });
+            
+            // Check if we just typed a markdown pattern
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const text = range.startContainer.textContent || '';
+                const offset = range.startOffset;
+                
+                // Check if we just typed a space after a markdown pattern
+                const beforeSpace = text.substring(0, offset - 1);
+                const afterSpace = text.substring(offset - 1, offset);
+                
+                // Only render if we just typed a space AND we're at the start of a line with a pattern
+                let shouldRender = false;
+                if (afterSpace === ' ') {
+                    const lastNewline = beforeSpace.lastIndexOf('\n');
+                    const lineStart = lastNewline + 1;
+                    const beforeSpaceOnLine = beforeSpace.substring(lineStart);
+                    
+                    // Check if what's before the space is a markdown trigger
+                    shouldRender = beforeSpaceOnLine.match(/^#{1,6}$/) || // Headers
+                                   beforeSpaceOnLine === '-' ||           // List dash
+                                   beforeSpaceOnLine === '*';             // List asterisk
+                }
+                
+                if (shouldRender) {
+                    // Count which line number we're on (0-based)
+                    const linesBeforeCursor = beforeSpace.split('\n').length - 1;
+                    
+                    // Small delay to let the space character get added first
+                    setTimeout(() => {
+                        // Re-render
+                        isInternalUpdate = true;
+                        editor.innerHTML = markdownToHtml(markdown);
+                        isInternalUpdate = false;
+                        
+                        // Find the element that corresponds to our line number
+                        const allElements = editor.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li');
+                        let elementIndex = 0;
+                        
+                        // Count elements to find the one we just created
+                        for (let i = 0; i < allElements.length; i++) {
+                            if (i === linesBeforeCursor) {
+                                const element = allElements[i];
+                                const range = document.createRange();
+                                const selection = window.getSelection();
+                                
+                                // Position cursor at the end of this element's text
+                                if (element.firstChild && element.firstChild.nodeType === Node.TEXT_NODE) {
+                                    range.setStart(element.firstChild, element.firstChild.length);
+                                } else {
+                                    range.selectNodeContents(element);
+                                }
+                                range.collapse(false);
+                                
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                                break;
+                            }
+                        }
+                    }, 10);
+                }
+            }
         }
     });
     
