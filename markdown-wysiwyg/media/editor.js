@@ -143,20 +143,38 @@
                 if (listItem && listItem.nodeName === 'LI') {
                     e.preventDefault();
                     
-                    // Create new list item
-                    const newLi = document.createElement('li');
-                    const br = document.createElement('br');
-                    newLi.appendChild(br);
-                    
-                    // Insert after current item
-                    listItem.parentNode.insertBefore(newLi, listItem.nextSibling);
-                    
-                    // Move cursor to new item
-                    const newRange = document.createRange();
-                    newRange.setStart(newLi, 0);
-                    newRange.collapse(true);
-                    selection.removeAllRanges();
-                    selection.addRange(newRange);
+                    if (e.shiftKey) {
+                        // Shift+Enter: Exit the list
+                        const ul = listItem.parentNode;
+                        const p = document.createElement('p');
+                        const br = document.createElement('br');
+                        p.appendChild(br);
+                        
+                        // Insert paragraph after the list
+                        ul.parentNode.insertBefore(p, ul.nextSibling);
+                        
+                        // Move cursor to new paragraph
+                        const newRange = document.createRange();
+                        newRange.setStart(p, 0);
+                        newRange.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(newRange);
+                    } else {
+                        // Regular Enter: Create new list item
+                        const newLi = document.createElement('li');
+                        const br = document.createElement('br');
+                        newLi.appendChild(br);
+                        
+                        // Insert after current item
+                        listItem.parentNode.insertBefore(newLi, listItem.nextSibling);
+                        
+                        // Move cursor to new item
+                        const newRange = document.createRange();
+                        newRange.setStart(newLi, 0);
+                        newRange.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(newRange);
+                    }
                 }
             }
         }
