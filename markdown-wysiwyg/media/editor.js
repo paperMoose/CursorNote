@@ -10,37 +10,70 @@
         const lines = markdown.split('\n');
         let html = '';
         let inParagraph = false;
+        let inList = false;
+        let inCodeBlock = false;
+        let codeContent = [];
         
-        for (let line of lines) {
-            // Empty line - close paragraph if open
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            
+            // Code blocks
+            if (line.startsWith('```')) {
+                if (inParagraph) { html += '</p>'; inParagraph = false; }
+                if (inList) { html += '</ul>'; inList = false; }
+                
+                if (inCodeBlock) {
+                    html += '<pre><code>' + codeContent.join('\n') + '</code></pre>';
+                    codeContent = [];
+                    inCodeBlock = false;
+                } else {
+                    inCodeBlock = true;
+                }
+                continue;
+            }
+            
+            if (inCodeBlock) {
+                codeContent.push(line);
+                continue;
+            }
+            
+            // Empty line - close paragraph/list if open
             if (line.trim() === '') {
                 if (inParagraph) {
                     html += '</p>';
                     inParagraph = false;
                 }
+                if (inList) {
+                    html += '</ul>';
+                    inList = false;
+                }
                 continue;
             }
             
             // Headers
-            if (line.startsWith('# ')) {
+            if (line.match(/^#{1,6}\s/)) {
                 if (inParagraph) { html += '</p>'; inParagraph = false; }
-                html += '<h1>' + processInline(line.slice(2)) + '</h1>';
+                if (inList) { html += '</ul>'; inList = false; }
+                const level = line.match(/^(#{1,6})\s/)[1].length;
+                html += `<h${level}>` + processInline(line.replace(/^#{1,6}\s+/, '')) + `</h${level}>`;
             }
-            else if (line.startsWith('## ')) {
+            // Checkboxes
+            else if (line.match(/^[\-\*]\s\[([ xX])\]\s/)) {
                 if (inParagraph) { html += '</p>'; inParagraph = false; }
-                html += '<h2>' + processInline(line.slice(3)) + '</h2>';
-            }
-            else if (line.startsWith('### ')) {
-                if (inParagraph) { html += '</p>'; inParagraph = false; }
-                html += '<h3>' + processInline(line.slice(4)) + '</h3>';
+                if (!inList) { html += '<ul>'; inList = true; }
+                const checked = line.match(/^[\-\*]\s\[([ xX])\]\s/)[1].toLowerCase() === 'x';
+                const text = line.replace(/^[\-\*]\s\[([ xX])\]\s/, '');
+                html += '<li><input type="checkbox"' + (checked ? ' checked' : '') + '> ' + processInline(text) + '</li>';
             }
             // Lists
-            else if (line.startsWith('- ') || line.startsWith('* ')) {
+            else if (line.match(/^[\-\*]\s/)) {
                 if (inParagraph) { html += '</p>'; inParagraph = false; }
-                html += '<li>' + processInline(line.slice(2)) + '</li>';
+                if (!inList) { html += '<ul>'; inList = true; }
+                html += '<li>' + processInline(line.replace(/^[\-\*]\s/, '')) + '</li>';
             }
             // Normal text
             else {
+                if (inList) { html += '</ul>'; inList = false; }
                 if (!inParagraph) {
                     html += '<p>';
                     inParagraph = true;
@@ -49,12 +82,10 @@
             }
         }
         
-        if (inParagraph) {
-            html += '</p>';
-        }
-        
-        // Wrap lists
-        html = html.replace(/(<li>.*?<\/li>)(?=(?!<li>))/gs, '<ul>$1</ul>');
+        // Close any open tags
+        if (inParagraph) html += '</p>';
+        if (inList) html += '</ul>';
+        if (inCodeBlock) html += '<pre><code>' + codeContent.join('\n') + '</code></pre>';
         
         return html;
     }
@@ -129,60 +160,96 @@
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
-                const text = range.startContainer.textContent || '';
+                const container = range.startContainer;
                 const offset = range.startOffset;
                 
-                // Check if we just typed a space after a markdown pattern
-                const beforeSpace = text.substring(0, offset - 1);
-                const afterSpace = text.substring(offset - 1, offset);
+                // Get the full editor text to check for patterns
+                const fullText = editor.textContent || '';
                 
-                // Only render if we just typed a space AND we're at the start of a line with a pattern
+                // Find our position in the full text
+                let positionInFullText = 0;
+                const walker = document.createTreeWalker(
+                    editor,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+                
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node === container) {
+                        positionInFullText += offset;
+                        break;
+                    }
+                    positionInFullText += node.textContent.length;
+                }
+                
+                // Get the current line
+                const beforePosition = fullText.substring(0, positionInFullText);
+                const lastNewline = beforePosition.lastIndexOf('\n');
+                const currentLine = fullText.substring(lastNewline + 1, positionInFullText);
+                
+                // Check for various markdown patterns
                 let shouldRender = false;
-                if (afterSpace === ' ') {
-                    const lastNewline = beforeSpace.lastIndexOf('\n');
-                    const lineStart = lastNewline + 1;
-                    const beforeSpaceOnLine = beforeSpace.substring(lineStart);
-                    
-                    // Check if what's before the space is a markdown trigger
-                    shouldRender = beforeSpaceOnLine.match(/^#{1,6}$/) || // Headers
-                                   beforeSpaceOnLine === '-' ||           // List dash
-                                   beforeSpaceOnLine === '*';             // List asterisk
+                
+                // Headers: "# ", "## ", etc.
+                if (currentLine.match(/^#{1,6}\s/)) {
+                    shouldRender = true;
+                }
+                // Lists: "- ", "* "
+                else if (currentLine.match(/^[\-\*]\s/) && !currentLine.match(/^[\-\*]\s\[/)) {
+                    shouldRender = true;
+                }
+                // Checkboxes: "- [ ] " or "- [x] "
+                else if (currentLine.match(/^[\-\*]\s\[([ xX])\]\s/)) {
+                    shouldRender = true;
+                }
+                // Code blocks: check if we just completed ```
+                else if (beforePosition.endsWith('```')) {
+                    shouldRender = true;
                 }
                 
                 if (shouldRender) {
-                    // Count which line number we're on (0-based)
-                    const linesBeforeCursor = beforeSpace.split('\n').length - 1;
-                    
-                    // Small delay to let the space character get added first
+                    // Small delay to let the character get added first
                     setTimeout(() => {
+                        // Save cursor position as character offset
+                        const cursorPos = positionInFullText;
+                        
                         // Re-render
                         isInternalUpdate = true;
                         editor.innerHTML = markdownToHtml(markdown);
                         isInternalUpdate = false;
                         
-                        // Find the element that corresponds to our line number
-                        const allElements = editor.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li');
-                        let elementIndex = 0;
+                        // Restore cursor position by character offset
+                        let charCount = 0;
+                        let found = false;
                         
-                        // Count elements to find the one we just created
-                        for (let i = 0; i < allElements.length; i++) {
-                            if (i === linesBeforeCursor) {
-                                const element = allElements[i];
-                                const range = document.createRange();
-                                const selection = window.getSelection();
-                                
-                                // Position cursor at the end of this element's text
-                                if (element.firstChild && element.firstChild.nodeType === Node.TEXT_NODE) {
-                                    range.setStart(element.firstChild, element.firstChild.length);
-                                } else {
-                                    range.selectNodeContents(element);
+                        function restoreCursor(node) {
+                            if (found) return;
+                            
+                            if (node.nodeType === Node.TEXT_NODE) {
+                                const nodeLength = node.textContent.length;
+                                if (charCount + nodeLength >= cursorPos) {
+                                    const range = document.createRange();
+                                    const selection = window.getSelection();
+                                    range.setStart(node, cursorPos - charCount);
+                                    range.collapse(true);
+                                    selection.removeAllRanges();
+                                    selection.addRange(range);
+                                    found = true;
                                 }
-                                range.collapse(false);
-                                
-                                selection.removeAllRanges();
-                                selection.addRange(range);
-                                break;
+                                charCount += nodeLength;
+                            } else {
+                                for (let child of node.childNodes) {
+                                    restoreCursor(child);
+                                }
                             }
+                        }
+                        
+                        restoreCursor(editor);
+                        
+                        if (!found) {
+                            editor.focus();
                         }
                     }, 10);
                 }

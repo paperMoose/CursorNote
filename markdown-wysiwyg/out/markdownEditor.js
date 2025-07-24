@@ -44,7 +44,7 @@ class MarkdownEditorProvider {
     }
     getHtmlForWebview(webview) {
         const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'editor.css'));
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'editor.js'));
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'editor-simple.js'));
         const nonce = getNonce();
         return `<!DOCTYPE html>
             <html lang="en">
