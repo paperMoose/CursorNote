@@ -11,20 +11,12 @@
         let html = '';
         let inParagraph = false;
         
-        let inList = false;
-        
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            
-            // Empty line - close paragraph/list if open
+        for (let line of lines) {
+            // Empty line - close paragraph if open
             if (line.trim() === '') {
                 if (inParagraph) {
                     html += '</p>';
                     inParagraph = false;
-                }
-                if (inList) {
-                    html += '</ul>';
-                    inList = false;
                 }
                 continue;
             }
@@ -32,31 +24,23 @@
             // Headers
             if (line.startsWith('# ')) {
                 if (inParagraph) { html += '</p>'; inParagraph = false; }
-                if (inList) { html += '</ul>'; inList = false; }
-                html += '<h1>' + processInline(line.substring(2)) + '</h1>';
+                html += '<h1>' + processInline(line.slice(2)) + '</h1>';
             }
             else if (line.startsWith('## ')) {
                 if (inParagraph) { html += '</p>'; inParagraph = false; }
-                if (inList) { html += '</ul>'; inList = false; }
-                html += '<h2>' + processInline(line.substring(3)) + '</h2>';
+                html += '<h2>' + processInline(line.slice(3)) + '</h2>';
             }
             else if (line.startsWith('### ')) {
                 if (inParagraph) { html += '</p>'; inParagraph = false; }
-                if (inList) { html += '</ul>'; inList = false; }
-                html += '<h3>' + processInline(line.substring(4)) + '</h3>';
+                html += '<h3>' + processInline(line.slice(4)) + '</h3>';
             }
             // Lists
             else if (line.startsWith('- ') || line.startsWith('* ')) {
                 if (inParagraph) { html += '</p>'; inParagraph = false; }
-                if (!inList) {
-                    html += '<ul>';
-                    inList = true;
-                }
-                html += '<li>' + processInline(line.substring(2)) + '</li>';
+                html += '<li>' + processInline(line.slice(2)) + '</li>';
             }
             // Normal text
             else {
-                if (inList) { html += '</ul>'; inList = false; }
                 if (!inParagraph) {
                     html += '<p>';
                     inParagraph = true;
@@ -68,9 +52,9 @@
         if (inParagraph) {
             html += '</p>';
         }
-        if (inList) {
-            html += '</ul>';
-        }
+        
+        // Wrap lists
+        html = html.replace(/(<li>.*?<\/li>)(?=(?!<li>))/gs, '<ul>$1</ul>');
         
         return html;
     }

@@ -37,6 +37,12 @@ body {
 
 #editor li {
     margin-bottom: 4px;
+    list-style: none;
+}
+
+#editor li input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
 }
 
 #editor blockquote {
