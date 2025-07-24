@@ -127,6 +127,41 @@
         }
     });
     
+    // Handle Enter key for list continuation
+    editor.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                let listItem = range.startContainer;
+                
+                // Find parent LI element
+                while (listItem && listItem.nodeName !== 'LI' && listItem !== editor) {
+                    listItem = listItem.parentNode;
+                }
+                
+                if (listItem && listItem.nodeName === 'LI') {
+                    e.preventDefault();
+                    
+                    // Create new list item
+                    const newLi = document.createElement('li');
+                    const br = document.createElement('br');
+                    newLi.appendChild(br);
+                    
+                    // Insert after current item
+                    listItem.parentNode.insertBefore(newLi, listItem.nextSibling);
+                    
+                    // Move cursor to new item
+                    const newRange = document.createRange();
+                    newRange.setStart(newLi, 0);
+                    newRange.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+                }
+            }
+        }
+    });
+    
     // Basic keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey || e.metaKey) {
