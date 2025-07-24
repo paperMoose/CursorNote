@@ -3,6 +3,7 @@
   "displayName": "Markdown WYSIWYG Editor",
   "description": "Simple, reliable Notion-like WYSIWYG editor for Markdown files",
   "version": "0.0.1",
+  "publisher": "your-publisher-name",
   "engines": {
     "vscode": "^1.74.0"
   },

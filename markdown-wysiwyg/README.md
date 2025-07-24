@@ -53,7 +53,7 @@ To make it the default editor for all markdown files:
 
 Your files remain as `.md` files. To edit with Cursor AI:
 - **Option 1**: Tell Cursor what you want (e.g., "add a table of contents")
-- **Option 2**: Right-click → "Open With... → Text Editor" for raw markdown
+- **Option **: Right-click → "Open With... → Text Editor" for raw markdown
 
 ## Development
 
