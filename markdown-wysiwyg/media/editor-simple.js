@@ -140,22 +140,20 @@
     
     // Simple keyboard shortcuts for headers and lists
     editor.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            document.execCommand('insertHTML', false, '<br>');
-        }
-        
-        // Ctrl/Cmd+1 for H1, Ctrl/Cmd+2 for H2, etc.
-        if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '3') {
-            e.preventDefault();
-            const level = parseInt(e.key);
-            document.execCommand('formatBlock', false, `<h${level}>`);
-        }
-        
-        // Ctrl/Cmd+L for list
-        if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
-            e.preventDefault();
-            document.execCommand('insertHTML', false, '<li>');
+        // Only handle shortcuts with Ctrl/Cmd, let Enter work normally
+        if ((e.ctrlKey || e.metaKey)) {
+            // Ctrl/Cmd+1 for H1, Ctrl/Cmd+2 for H2, etc.
+            if (e.key >= '1' && e.key <= '3') {
+                e.preventDefault();
+                const level = parseInt(e.key);
+                document.execCommand('formatBlock', false, `<h${level}>`);
+            }
+            
+            // Ctrl/Cmd+L for list
+            if (e.key === 'l') {
+                e.preventDefault();
+                document.execCommand('insertHTML', false, '<li>');
+            }
         }
     });
     
