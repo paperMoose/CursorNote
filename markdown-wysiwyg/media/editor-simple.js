@@ -134,5 +134,50 @@
         }
     });
     
+    // Create floating toolbar
+    const toolbar = document.createElement('div');
+    toolbar.className = 'toolbar';
+    toolbar.innerHTML = `
+        <button data-command="bold" title="Bold (Ctrl/Cmd+B)"><strong>B</strong></button>
+        <button data-command="italic" title="Italic (Ctrl/Cmd+I)"><em>I</em></button>
+        <div class="separator"></div>
+        <button data-command="h1" title="Heading 1 (Ctrl/Cmd+1)">H1</button>
+        <button data-command="h2" title="Heading 2 (Ctrl/Cmd+2)">H2</button>
+        <button data-command="h3" title="Heading 3 (Ctrl/Cmd+3)">H3</button>
+        <div class="separator"></div>
+        <button data-command="list" title="List (Ctrl/Cmd+L)">• List</button>
+    `;
+    document.body.appendChild(toolbar);
+    
+    // Handle toolbar clicks
+    toolbar.addEventListener('click', (e) => {
+        const button = e.target.closest('button');
+        if (!button) return;
+        
+        const command = button.dataset.command;
+        editor.focus();
+        
+        switch(command) {
+            case 'bold':
+                document.execCommand('bold');
+                break;
+            case 'italic':
+                document.execCommand('italic');
+                break;
+            case 'h1':
+                document.execCommand('formatBlock', false, '<h1>');
+                break;
+            case 'h2':
+                document.execCommand('formatBlock', false, '<h2>');
+                break;
+            case 'h3':
+                document.execCommand('formatBlock', false, '<h3>');
+                break;
+            case 'list':
+                document.execCommand('insertHTML', false, '<li>');
+                break;
+        }
+    });
+    
     editor.focus();
 })();

@@ -167,3 +167,72 @@ body {
         background-color: #313131;
     }
 }
+
+/* Toolbar styles */
+.toolbar {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 5px;
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.toolbar button {
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.toolbar button:hover {
+    background: #e8e8e8;
+    border-color: #999;
+}
+
+.toolbar button:active {
+    background: #ddd;
+}
+
+.toolbar .separator {
+    width: 1px;
+    height: 20px;
+    background: #ccc;
+    margin: 0 5px;
+}
+
+/* Dark theme toolbar */
+@media (prefers-color-scheme: dark) {
+    .toolbar {
+        background: #2d2d2d;
+        border-color: #444;
+    }
+    
+    .toolbar button {
+        background: #3c3c3c;
+        border-color: #555;
+        color: #ccc;
+    }
+    
+    .toolbar button:hover {
+        background: #484848;
+        border-color: #666;
+    }
+    
+    .toolbar button:active {
+        background: #555;
+    }
+    
+    .toolbar .separator {
+        background: #555;
+    }
+}
