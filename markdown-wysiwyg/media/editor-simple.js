@@ -20,6 +20,8 @@
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.+?)\*/g, '<em>$1</em>')
             .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+            .replace(/^---$/gm, '<hr>')
             .replace(/\n/g, '<br>');
             
         // Wrap consecutive li elements in ul
@@ -100,6 +102,14 @@
                             walkChildren(node);
                             text += '`';
                         }
+                        break;
+                    case 'blockquote':
+                        text += '> ';
+                        walkChildren(node);
+                        text += '\n';
+                        break;
+                    case 'hr':
+                        text += '---\n';
                         break;
                     default:
                         walkChildren(node);
