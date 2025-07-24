@@ -13,6 +13,8 @@
             .replace(/^# (.+)$/gm, '<h1>$1</h1>')
             .replace(/^## (.+)$/gm, '<h2>$1</h2>')
             .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^- \[ \](.*)$/gm, '<li><input type="checkbox">$1</li>')
+            .replace(/^- \[x\](.*)$/gmi, '<li><input type="checkbox" checked>$1</li>')
             .replace(/^- (.+)$/gm, '<li>$1</li>')
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.+?)\*/g, '<em>$1</em>')
@@ -66,7 +68,13 @@
                         text += '*';
                         break;
                     case 'li':
-                        text += '- ';
+                        // Check if it has a checkbox
+                        const checkbox = node.querySelector('input[type="checkbox"]');
+                        if (checkbox) {
+                            text += checkbox.checked ? '- [x] ' : '- [ ] ';
+                        } else {
+                            text += '- ';
+                        }
                         walkChildren(node);
                         text += '\n';
                         break;
@@ -84,6 +92,12 @@
         
         function walkChildren(node) {
             for (let child of node.childNodes) {
+                // Skip checkbox inputs when walking children
+                if (child.nodeType === Node.ELEMENT_NODE && 
+                    child.tagName === 'INPUT' && 
+                    child.type === 'checkbox') {
+                    continue;
+                }
                 walk(child);
             }
         }
@@ -105,6 +119,17 @@
     // Handle typing - let the browser handle bold/italic naturally
     editor.addEventListener('input', () => {
         if (!isInternalUpdate) {
+            const markdown = htmlToMarkdown(editor);
+            vscode.postMessage({
+                type: 'edit',
+                text: markdown
+            });
+        }
+    });
+    
+    // Handle checkbox clicks
+    editor.addEventListener('change', (e) => {
+        if (e.target.type === 'checkbox') {
             const markdown = htmlToMarkdown(editor);
             vscode.postMessage({
                 type: 'edit',
@@ -146,6 +171,7 @@
         <button data-command="h3" title="Heading 3 (Ctrl/Cmd+3)">H3</button>
         <div class="separator"></div>
         <button data-command="list" title="List (Ctrl/Cmd+L)">• List</button>
+        <button data-command="checkbox" title="Checkbox">☐ Task</button>
     `;
     document.body.appendChild(toolbar);
     
@@ -175,6 +201,9 @@
                 break;
             case 'list':
                 document.execCommand('insertHTML', false, '<li>');
+                break;
+            case 'checkbox':
+                document.execCommand('insertHTML', false, '<li><input type="checkbox"> ');
                 break;
         }
     });

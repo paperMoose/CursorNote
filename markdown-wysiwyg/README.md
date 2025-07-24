@@ -3,6 +3,17 @@
 
 
 
+
+
+[ ] 
+
+
+
+- [ ]
+
+
+
+
 A simple, reliable VS Code extension that provides a Notion-like WYSIWYG editing experience for Markdown files.
 
 Features
@@ -18,6 +29,18 @@ Features
 
 
 
+
+
+
+
+
+
+- testtest
+- test
+
+- test
+
+
 - Headers (H1-H6)
 - Bold and italic text
 - Links and images
@@ -30,11 +53,33 @@ Features
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 1. Install the extension 2. Open any `.md` file 3. Click "Open With..." and select "Markdown WYSIWYG Editor" 4. Start editing!
 
 To make it the default editor for all markdown files, right-click a `.md` file and select "Open With... > Configure Default Editor".
 
 ## Development
+
+
+
+
+
+
+
+
+
+
+
 
 
 - test
@@ -46,6 +91,17 @@ Then press F5 in VS Code to test the extension.
 
 ## License
 
+
+
+
+
+
+
+
+
+
+
+
 - test
 
 
@@ -53,8 +109,34 @@ MIT
 
 - test
 test
+### - - 
 
-- test
+
+
+
+
+
+
+
+
+
+
+
+### ### ### # - test
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 - tes
 [ ]
 
@@ -64,12 +146,45 @@ test
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 # test
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 # - test
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -84,6 +199,15 @@ test
 
 
 # test
+
+
+
+
+# [ ] 
+
+
+
+
 
 
 
