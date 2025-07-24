@@ -13,11 +13,13 @@
             .replace(/^# (.+)$/gm, '<h1>$1</h1>')
             .replace(/^## (.+)$/gm, '<h2>$1</h2>')
             .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
             .replace(/^- \[ \](.*)$/gm, '<li><input type="checkbox">$1</li>')
             .replace(/^- \[x\](.*)$/gmi, '<li><input type="checkbox" checked>$1</li>')
             .replace(/^- (.+)$/gm, '<li>$1</li>')
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>')
             .replace(/\n/g, '<br>');
             
         // Wrap consecutive li elements in ul
@@ -84,6 +86,21 @@
                     case 'ul':
                         walkChildren(node);
                         break;
+                    case 'pre':
+                        text += '```\n';
+                        walkChildren(node);
+                        text += '\n```\n';
+                        break;
+                    case 'code':
+                        // Skip if inside pre
+                        if (node.parentElement && node.parentElement.tagName === 'PRE') {
+                            walkChildren(node);
+                        } else {
+                            text += '`';
+                            walkChildren(node);
+                            text += '`';
+                        }
+                        break;
                     default:
                         walkChildren(node);
                 }
@@ -140,7 +157,99 @@
     
     // Simple keyboard shortcuts for headers and lists
     editor.addEventListener('keydown', (e) => {
-        // Only handle shortcuts with Ctrl/Cmd, let Enter work normally
+        // Handle Enter key in code blocks
+        if (e.key === 'Enter') {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                let node = range.startContainer;
+                
+                // First check if we're between ``` markers
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent;
+                    const offset = range.startOffset;
+                    
+                    // Look for ``` before cursor
+                    const beforeText = text.substring(0, offset);
+                    const afterText = text.substring(offset);
+                    
+                    const hasOpeningBackticks = beforeText.includes('```');
+                    const hasClosingBackticks = afterText.includes('```');
+                    
+                    if (hasOpeningBackticks && hasClosingBackticks) {
+                        // We're between backticks, just insert a newline
+                        e.preventDefault();
+                        document.execCommand('insertText', false, '\n');
+                        return;
+                    }
+                }
+                
+                // Check if we're inside a PRE/CODE block
+                let inCodeBlock = false;
+                let codeBlock = null;
+                while (node && node !== editor) {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        if (node.tagName === 'PRE' || (node.tagName === 'CODE' && node.parentElement?.tagName === 'PRE')) {
+                            inCodeBlock = true;
+                            codeBlock = node.tagName === 'PRE' ? node : node.parentElement;
+                            break;
+                        }
+                    }
+                    node = node.parentNode;
+                }
+                
+                if (inCodeBlock) {
+                    e.preventDefault();
+                    
+                    if (e.shiftKey) {
+                        // Shift+Enter: Exit code block
+                        const p = document.createElement('p');
+                        const br = document.createElement('br');
+                        p.appendChild(br);
+                        
+                        // Insert after the code block
+                        codeBlock.parentNode.insertBefore(p, codeBlock.nextSibling);
+                        
+                        // Move cursor to new paragraph
+                        const newRange = document.createRange();
+                        newRange.setStart(p, 0);
+                        newRange.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(newRange);
+                    } else {
+                        // Regular Enter: New line in code block
+                        // Find the CODE element
+                        const codeElement = codeBlock.querySelector('code') || codeBlock;
+                        
+                        // Make sure we have content in the code element
+                        if (!codeElement.firstChild) {
+                            codeElement.appendChild(document.createTextNode(''));
+                        }
+                        
+                        // Insert newline at current position
+                        const textNode = document.createTextNode('\n');
+                        
+                        // If we're at the end of the code block, append
+                        if (range.endContainer === codeElement || 
+                            (range.endContainer.parentNode === codeElement && 
+                             range.endOffset === range.endContainer.textContent.length)) {
+                            codeElement.appendChild(textNode);
+                        } else {
+                            range.insertNode(textNode);
+                        }
+                        
+                        // Move cursor after the newline
+                        const newRange = document.createRange();
+                        newRange.setStartAfter(textNode);
+                        newRange.setEndAfter(textNode);
+                        selection.removeAllRanges();
+                        selection.addRange(newRange);
+                    }
+                }
+            }
+        }
+        
+        // Handle shortcuts with Ctrl/Cmd
         if ((e.ctrlKey || e.metaKey)) {
             // Ctrl/Cmd+1 for H1, Ctrl/Cmd+2 for H2, etc.
             if (e.key >= '1' && e.key <= '3') {
@@ -170,6 +279,9 @@
         <div class="separator"></div>
         <button data-command="list" title="List (Ctrl/Cmd+L)">• List</button>
         <button data-command="checkbox" title="Checkbox">☐ Task</button>
+        <div class="separator"></div>
+        <button data-command="code" title="Inline Code">&lt;/&gt;</button>
+        <button data-command="codeblock" title="Code Block">[...]</button>
     `;
     document.body.appendChild(toolbar);
     
@@ -202,6 +314,19 @@
                 break;
             case 'checkbox':
                 document.execCommand('insertHTML', false, '<li><input type="checkbox"> ');
+                break;
+            case 'code':
+                // Wrap selection in code tags
+                const selection = window.getSelection();
+                if (selection.toString()) {
+                    document.execCommand('insertHTML', false, `<code>${selection.toString()}</code>`);
+                } else {
+                    document.execCommand('insertHTML', false, '<code>code</code>');
+                }
+                break;
+            case 'codeblock':
+                // Insert a code block
+                document.execCommand('insertHTML', false, '<pre><code>// code here</code></pre><p><br></p>');
                 break;
         }
     });
