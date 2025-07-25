@@ -37,12 +37,20 @@ body {
 
 #editor li {
     margin-bottom: 4px;
+    list-style: none;
 }
 
 #editor li input[type="checkbox"] {
     margin-right: 8px;
+    margin-left: -1.5em;
     cursor: pointer;
 }
+
+/* Preserve indentation for nested items */
+#editor li.indent-1 { margin-left: 2em; }
+#editor li.indent-2 { margin-left: 4em; }
+#editor li.indent-3 { margin-left: 6em; }
+#editor li.indent-4 { margin-left: 8em; }
 
 #editor blockquote {
     padding: 0 1em;

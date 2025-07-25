@@ -14,9 +14,23 @@
             .replace(/^## (.+)$/gm, '<h2>$1</h2>')
             .replace(/^### (.+)$/gm, '<h3>$1</h3>')
             .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-            .replace(/^- \[ ?\](.*)$/gm, '<li><input type="checkbox">$1</li>')
-            .replace(/^- \[[xX]\](.*)$/gm, '<li><input type="checkbox" checked>$1</li>')
-            .replace(/^- (.+)$/gm, '<li>$1</li>')
+            // Process indented checkboxes first
+            .replace(/^(\s*)- \[ ?\](.*)$/gm, (match, spaces, text) => {
+                const indentLevel = Math.floor(spaces.length / 2);
+                const indentClass = indentLevel > 0 ? ` class="indent-${indentLevel}"` : '';
+                return `<li${indentClass}><input type="checkbox">${text}</li>`;
+            })
+            .replace(/^(\s*)- \[[xX]\](.*)$/gm, (match, spaces, text) => {
+                const indentLevel = Math.floor(spaces.length / 2);
+                const indentClass = indentLevel > 0 ? ` class="indent-${indentLevel}"` : '';
+                return `<li${indentClass}><input type="checkbox" checked>${text}</li>`;
+            })
+            // Then process regular list items
+            .replace(/^(\s*)- (.+)$/gm, (match, spaces, text) => {
+                const indentLevel = Math.floor(spaces.length / 2);
+                const indentClass = indentLevel > 0 ? ` class="indent-${indentLevel}"` : '';
+                return `<li${indentClass}>${text}</li>`;
+            })
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.+?)\*/g, '<em>$1</em>')
             .replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -73,12 +87,21 @@
                         text += '*';
                         break;
                     case 'li':
+                        // Check indentation level from class
+                        let indent = '';
+                        if (node.className) {
+                            const match = node.className.match(/indent-(\d+)/);
+                            if (match) {
+                                indent = '  '.repeat(parseInt(match[1]));
+                            }
+                        }
+                        
                         // Check if it has a checkbox
                         const checkbox = node.querySelector('input[type="checkbox"]');
                         if (checkbox) {
-                            text += checkbox.checked ? '- [x] ' : '- [ ] ';
+                            text += indent + (checkbox.checked ? '- [x] ' : '- [ ] ');
                         } else {
-                            text += '- ';
+                            text += indent + '- ';
                         }
                         walkChildren(node);
                         text += '\n';
