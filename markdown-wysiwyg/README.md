@@ -32,6 +32,8 @@ A simple, reliable VS Code extension that provides a Notion-like WYSIWYG editing
 - **Ctrl/Cmd+I** - Italic
 - **Ctrl/Cmd+1/2/3** - Headers
 - **Ctrl/Cmd+L** - List
+- **Tab** - Indent list item or checkbox
+- **Shift+Tab** - Unindent list item or checkbox
 - **Enter** in code block - New line
 - **Shift+Enter** in code block - Exit code block
 - **Shift+Enter** in list - Exit list

@@ -212,6 +212,59 @@
     
     // Simple keyboard shortcuts for headers and lists
     editor.addEventListener('keydown', (e) => {
+        // Handle Tab key for indentation
+        if (e.key === 'Tab') {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                let node = range.startContainer;
+                
+                // Find the nearest li element
+                while (node && node !== editor) {
+                    if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'LI') {
+                        e.preventDefault();
+                        
+                        // Get current indent level
+                        let currentIndent = 0;
+                        if (node.className) {
+                            const match = node.className.match(/indent-(\d+)/);
+                            if (match) {
+                                currentIndent = parseInt(match[1]);
+                            }
+                        }
+                        
+                        if (e.shiftKey) {
+                            // Shift+Tab: decrease indent
+                            if (currentIndent > 0) {
+                                currentIndent--;
+                                if (currentIndent === 0) {
+                                    node.className = '';
+                                } else {
+                                    node.className = `indent-${currentIndent}`;
+                                }
+                            }
+                        } else {
+                            // Tab: increase indent (max 4 levels)
+                            if (currentIndent < 4) {
+                                currentIndent++;
+                                node.className = `indent-${currentIndent}`;
+                            }
+                        }
+                        
+                        // Trigger change to update markdown
+                        const markdown = htmlToMarkdown(editor);
+                        vscode.postMessage({
+                            type: 'edit',
+                            text: markdown
+                        });
+                        
+                        return;
+                    }
+                    node = node.parentNode;
+                }
+            }
+        }
+        
         // Handle Enter key in code blocks
         if (e.key === 'Enter') {
             const selection = window.getSelection();
