@@ -49,6 +49,46 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
                     await this.updateTextDocument(document, e.text);
                     makingEdit = false;
                     return;
+                case 'openFile':
+                    const filePath = e.path;
+                    let fileUri: vscode.Uri;
+                    
+                    // Handle different path types
+                    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+                        // External URL
+                        vscode.env.openExternal(vscode.Uri.parse(filePath));
+                        return;
+                    } else if (filePath.startsWith('/')) {
+                        // Absolute path
+                        fileUri = vscode.Uri.file(filePath);
+                    } else {
+                        // Relative path - resolve from current document's directory
+                        const currentDir = vscode.Uri.joinPath(document.uri, '..');
+                        fileUri = vscode.Uri.joinPath(currentDir, filePath);
+                    }
+                    
+                    try {
+                        // Check if file exists
+                        await vscode.workspace.fs.stat(fileUri);
+                        // Try to open as text document
+                        const doc = await vscode.workspace.openTextDocument(fileUri);
+                        await vscode.window.showTextDocument(doc, { preview: false });
+                    } catch (error) {
+                        // If file doesn't exist, try from workspace root
+                        if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+                            const workspaceRoot = vscode.workspace.workspaceFolders[0].uri;
+                            const workspaceFileUri = vscode.Uri.joinPath(workspaceRoot, filePath);
+                            try {
+                                const doc = await vscode.workspace.openTextDocument(workspaceFileUri);
+                                await vscode.window.showTextDocument(doc, { preview: false });
+                            } catch (err) {
+                                vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
+                            }
+                        } else {
+                            vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
+                        }
+                    }
+                    return;
             }
         });
         
@@ -66,7 +106,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
             <html lang="en">
             <head>
                 <meta charset="UTF-8">
-                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} https: data:;">
+                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} https: data:; connect-src ${webview.cspSource};">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <link href="${styleUri}" rel="stylesheet">
                 <title>Markdown Editor</title>

@@ -23,6 +23,7 @@ A simple, reliable VS Code extension that provides a Notion-like WYSIWYG editing
 - **Code blocks** and `inline code`
 - **Blockquotes**
 - **Horizontal rules**
+- **Links** (click to open files)
 
 ## Keyboard Shortcuts
 
