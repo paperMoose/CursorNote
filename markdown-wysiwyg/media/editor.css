@@ -37,6 +37,11 @@ body {
 
 #editor li {
     margin-bottom: 4px;
+    list-style: disc;
+    list-style-position: inside;
+}
+
+#editor li[class*="indent-"] {
     list-style: none;
 }
 
@@ -115,6 +120,7 @@ body {
 #editor a {
     color: #0366d6;
     text-decoration: none;
+    cursor: pointer;
 }
 
 #editor a:hover {

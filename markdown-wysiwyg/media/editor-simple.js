@@ -3,6 +3,7 @@
     const editor = document.getElementById('editor');
     
     let isInternalUpdate = false;
+    let lastReceivedText = '';
     
     // Simple markdown to HTML - just enough to display
     function markdownToHtml(markdown) {
@@ -36,13 +37,19 @@
             .replace(/`([^`]+)`/g, '<code>$1</code>')
             .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
             .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
-            .replace(/^---$/gm, '<hr>')
-            .replace(/\n/g, '<br>');
+            .replace(/^---$/gm, '<hr>');
             
+        // For now, let's use a simpler approach - just wrap lists
+        // First, let's handle multi-line content by preserving line breaks temporarily
+        html = html.replace(/\n/g, '|||NEWLINE|||');
+        
         // Wrap consecutive li elements in ul
-        html = html.replace(/(<li>.*?<\/li>(?:<br>)?)+/g, (match) => {
-            return '<ul>' + match.replace(/<br>/g, '') + '</ul>';
+        html = html.replace(/(<li.*?>.*?<\/li>(?:\|\|\|NEWLINE\|\|\|)?)+/g, (match) => {
+            return '<ul>' + match + '</ul>';
         });
+        
+        // Restore line breaks
+        html = html.replace(/\|\|\|NEWLINE\|\|\|/g, '\n');
         
         return html;
     }
@@ -162,13 +169,83 @@
         return text.trim();
     }
     
+    // Get simple cursor position
+    function getCursorOffset() {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return 0;
+        
+        const range = selection.getRangeAt(0);
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(editor);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        
+        return preCaretRange.toString().length;
+    }
+    
+    // Set cursor position by offset
+    function setCursorOffset(offset) {
+        const walker = document.createTreeWalker(
+            editor,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        
+        let node;
+        let currentOffset = 0;
+        
+        while (node = walker.nextNode()) {
+            const nodeLength = node.textContent.length;
+            if (currentOffset + nodeLength >= offset) {
+                const selection = window.getSelection();
+                const range = document.createRange();
+                try {
+                    const localOffset = Math.min(offset - currentOffset, nodeLength);
+                    range.setStart(node, localOffset);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } catch (e) {
+                    // If we can't set the exact position, just focus the editor
+                    editor.focus();
+                }
+                return;
+            }
+            currentOffset += nodeLength;
+        }
+        
+        // If we couldn't find a position, just focus at the end
+        editor.focus();
+    }
+    
     // Handle messages from VS Code
     window.addEventListener('message', event => {
         const message = event.data;
         if (message.type === 'update') {
+            // Get current markdown from the editor
+            const currentMarkdown = htmlToMarkdown(editor);
+            
+            // Only update if the markdown actually changed
+            // This prevents cursor jumps when saving without changes
+            if (currentMarkdown.trim() === message.text.trim()) {
+                return;
+            }
+            
+            lastReceivedText = message.text;
+            
+            // Save cursor position
+            const cursorPos = getCursorOffset();
+            
             isInternalUpdate = true;
             editor.innerHTML = markdownToHtml(message.text);
             isInternalUpdate = false;
+            
+            // Try to restore cursor position
+            // Use requestAnimationFrame for better timing
+            requestAnimationFrame(() => {
+                setCursorOffset(Math.min(cursorPos, editor.textContent.length));
+                editor.focus();
+            });
         }
     });
     
@@ -369,7 +446,7 @@
             // Ctrl/Cmd+L for list
             if (e.key === 'l') {
                 e.preventDefault();
-                document.execCommand('insertHTML', false, '<li>');
+                document.execCommand('insertHTML', false, '<ul><li></li></ul>');
             }
         }
     });
@@ -418,7 +495,7 @@
                 document.execCommand('formatBlock', false, '<h3>');
                 break;
             case 'list':
-                document.execCommand('insertHTML', false, '<li>');
+                document.execCommand('insertHTML', false, '<ul><li></li></ul>');
                 break;
             case 'checkbox':
                 document.execCommand('insertHTML', false, '<li><input type="checkbox"> ');
