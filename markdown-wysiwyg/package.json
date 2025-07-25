@@ -4,6 +4,10 @@
   "description": "Simple, reliable Notion-like WYSIWYG editor for Markdown files",
   "version": "0.0.1",
   "publisher": "your-publisher-name",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/paperMoose/CursorNote"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },

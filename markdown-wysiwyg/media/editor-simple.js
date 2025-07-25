@@ -39,6 +39,67 @@
             .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
             .replace(/^---$/gm, '<hr>');
             
+        // Process tables
+        const lines = html.split('\n');
+        let inTable = false;
+        let tableHtml = '';
+        let processedLines = [];
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            
+            // Check if this line is a table row
+            if (line.includes('|')) {
+                const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+                
+                if (cells.length > 0) {
+                    if (!inTable) {
+                        // Start a new table
+                        tableHtml = '<table>\n';
+                        inTable = true;
+                        
+                        // First row is header
+                        tableHtml += '<thead><tr>';
+                        cells.forEach(cell => {
+                            tableHtml += `<th>${cell}</th>`;
+                        });
+                        tableHtml += '</tr></thead>\n';
+                        
+                        // Check if next line is separator
+                        if (i + 1 < lines.length && lines[i + 1].includes('|') && lines[i + 1].includes('-')) {
+                            i++; // Skip separator line
+                            tableHtml += '<tbody>\n';
+                        }
+                    } else {
+                        // Body row
+                        tableHtml += '<tr>';
+                        cells.forEach(cell => {
+                            tableHtml += `<td>${cell}</td>`;
+                        });
+                        tableHtml += '</tr>\n';
+                    }
+                }
+            } else {
+                // Not a table line
+                if (inTable) {
+                    // Close the table
+                    tableHtml += '</tbody></table>\n';
+                    processedLines.push(tableHtml);
+                    inTable = false;
+                    tableHtml = '';
+                }
+                processedLines.push(line);
+            }
+        }
+        
+        // Close table if still open
+        if (inTable) {
+            tableHtml += '</tbody></table>\n';
+            processedLines.push(tableHtml);
+        }
+        
+        html = processedLines.join('\n');
+            
         // For now, let's use a simpler approach - just wrap lists
         // First, let's handle multi-line content by preserving line breaks temporarily
         html = html.replace(/\n/g, '|||NEWLINE|||');
@@ -147,6 +208,35 @@
                         walkChildren(node);
                         const href = node.getAttribute('data-href') || node.href || '#';
                         text += '](' + href + ')';
+                        break;
+                    case 'table':
+                        // Extract table structure
+                        const thead = node.querySelector('thead');
+                        const tbody = node.querySelector('tbody');
+                        
+                        if (thead) {
+                            const headerRow = thead.querySelector('tr');
+                            if (headerRow) {
+                                const headers = Array.from(headerRow.querySelectorAll('th'));
+                                text += '| ' + headers.map(th => th.textContent.trim()).join(' | ') + ' |\n';
+                                text += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
+                            }
+                        }
+                        
+                        if (tbody) {
+                            const rows = tbody.querySelectorAll('tr');
+                            rows.forEach(row => {
+                                const cells = Array.from(row.querySelectorAll('td'));
+                                text += '| ' + cells.map(td => td.textContent.trim()).join(' | ') + ' |\n';
+                            });
+                        }
+                        break;
+                    case 'thead':
+                    case 'tbody':
+                    case 'tr':
+                    case 'th':
+                    case 'td':
+                        // Skip these as they're handled by the table case
                         break;
                     default:
                         walkChildren(node);
@@ -468,6 +558,8 @@
         <div class="separator"></div>
         <button data-command="code" title="Inline Code">&lt;/&gt;</button>
         <button data-command="codeblock" title="Code Block">[...]</button>
+        <div class="separator"></div>
+        <button data-command="table" title="Table">Table</button>
     `;
     document.body.appendChild(toolbar);
     
@@ -513,6 +605,34 @@
             case 'codeblock':
                 // Insert a code block
                 document.execCommand('insertHTML', false, '<pre><code>// code here</code></pre><p><br></p>');
+                break;
+            case 'table':
+                // Insert a basic 3x3 table
+                const tableHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Header 1</th>
+                                <th>Header 2</th>
+                                <th>Header 3</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Cell 1</td>
+                                <td>Cell 2</td>
+                                <td>Cell 3</td>
+                            </tr>
+                            <tr>
+                                <td>Cell 4</td>
+                                <td>Cell 5</td>
+                                <td>Cell 6</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><br></p>
+                `;
+                document.execCommand('insertHTML', false, tableHTML);
                 break;
         }
     });
