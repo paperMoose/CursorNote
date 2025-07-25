@@ -35,7 +35,7 @@
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.+?)\*/g, '<em>$1</em>')
             .replace(/`([^`]+)`/g, '<code>$1</code>')
-            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="#" data-href="$2">$1</a>')
             .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
             .replace(/^---$/gm, '<hr>');
             
@@ -145,7 +145,8 @@
                     case 'a':
                         text += '[';
                         walkChildren(node);
-                        text += '](' + node.href + ')';
+                        const href = node.getAttribute('data-href') || node.href || '#';
+                        text += '](' + href + ')';
                         break;
                     default:
                         walkChildren(node);
@@ -276,7 +277,7 @@
         const link = e.target.closest('a');
         if (link) {
             e.preventDefault();
-            const href = link.getAttribute('href');
+            const href = link.getAttribute('data-href');
             if (href) {
                 console.log('Link clicked:', href);
                 vscode.postMessage({
