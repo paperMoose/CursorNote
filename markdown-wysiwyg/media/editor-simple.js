@@ -5,80 +5,173 @@
     let isInternalUpdate = false;
     let lastReceivedText = '';
     
+    // Helper function to process inline markdown formatting
+    function processInline(text) {
+        // Store escaped characters temporarily
+        const escapeMap = new Map();
+        let escapeIndex = 0;
+        text = text.replace(/\\([\\`*_{}[\]()#+\-.!|~])/g, (match, char) => {
+            const placeholder = `__ESCAPE_${escapeIndex}__`;
+            escapeMap.set(placeholder, char);
+            escapeIndex++;
+            return placeholder;
+        });
+
+        // Store inline code to prevent formatting inside it
+        const codeMap = new Map();
+        let codeIndex = 0;
+        text = text.replace(/`([^`]+)`/g, (match, code) => {
+            const placeholder = `__CODE_${codeIndex}__`;
+            codeMap.set(placeholder, `<code>${code}</code>`);
+            codeIndex++;
+            return placeholder;
+        });
+
+        // Process images (must come before links)
+        text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+        // Process links
+        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="javascript:void(0)" data-href="$2">$1</a>');
+
+        // Bold (must come before italic) - handle both ** and __
+        text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+        // Italic - handle both * and _
+        text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        text = text.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+        // Strikethrough
+        text = text.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+        // Restore inline code
+        codeMap.forEach((value, key) => {
+            text = text.replace(key, value);
+        });
+
+        // Restore escaped characters
+        escapeMap.forEach((value, key) => {
+            text = text.replace(key, value);
+        });
+
+        return text;
+    }
+
     // Simple markdown to HTML - just enough to display
     function markdownToHtml(markdown) {
+        // First escape HTML entities
         let html = markdown
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-            .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-            // Process indented checkboxes first
-            .replace(/^(\s*)- \[ ?\](.*)$/gm, (match, spaces, text) => {
-                const indentLevel = Math.floor(spaces.length / 2);
-                const indentClass = indentLevel > 0 ? ` class="indent-${indentLevel}"` : '';
-                return `<li${indentClass}><input type="checkbox">${text}</li>`;
-            })
-            .replace(/^(\s*)- \[[xX]\](.*)$/gm, (match, spaces, text) => {
-                const indentLevel = Math.floor(spaces.length / 2);
-                const indentClass = indentLevel > 0 ? ` class="indent-${indentLevel}"` : '';
-                return `<li${indentClass}><input type="checkbox" checked>${text}</li>`;
-            })
-            // Then process regular list items
-            .replace(/^(\s*)- (.+)$/gm, (match, spaces, text) => {
-                const indentLevel = Math.floor(spaces.length / 2);
-                const indentClass = indentLevel > 0 ? ` class="indent-${indentLevel}"` : '';
-                return `<li${indentClass}>${text}</li>`;
-            })
-            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.+?)\*/g, '<em>$1</em>')
-            .replace(/`([^`]+)`/g, '<code>$1</code>')
-            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="#" data-href="$2">$1</a>')
-            .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+            .replace(/>/g, '&gt;');
+
+        // Process code blocks with language hints
+        html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+            const langClass = lang ? ` class="language-${lang}"` : '';
+            return `<pre><code${langClass}>${code}</code></pre>`;
+        });
+
+        // Process headers
+        html = html
+            .replace(/^###### (.+)$/gm, (match, text) => `<h6>${processInline(text)}</h6>`)
+            .replace(/^##### (.+)$/gm, (match, text) => `<h5>${processInline(text)}</h5>`)
+            .replace(/^#### (.+)$/gm, (match, text) => `<h4>${processInline(text)}</h4>`)
+            .replace(/^### (.+)$/gm, (match, text) => `<h3>${processInline(text)}</h3>`)
+            .replace(/^## (.+)$/gm, (match, text) => `<h2>${processInline(text)}</h2>`)
+            .replace(/^# (.+)$/gm, (match, text) => `<h1>${processInline(text)}</h1>`);
+
+        // Process indented checkboxes first
+        html = html.replace(/^(\s*)- \[ ?\](.*)$/gm, (match, spaces, text) => {
+            const indentLevel = Math.floor(spaces.length / 2);
+            const indentClass = indentLevel > 0 ? ` class="indent-${indentLevel}"` : '';
+            return `<li${indentClass}><input type="checkbox">${processInline(text)}</li>`;
+        });
+        html = html.replace(/^(\s*)- \[[xX]\](.*)$/gm, (match, spaces, text) => {
+            const indentLevel = Math.floor(spaces.length / 2);
+            const indentClass = indentLevel > 0 ? ` class="indent-${indentLevel}"` : '';
+            return `<li${indentClass}><input type="checkbox" checked>${processInline(text)}</li>`;
+        });
+
+        // Process unordered list items
+        html = html.replace(/^(\s*)[\-*] (.+)$/gm, (match, spaces, text) => {
+            const indentLevel = Math.floor(spaces.length / 2);
+            const indentClass = indentLevel > 0 ? ` class="indent-${indentLevel}"` : '';
+            return `<li${indentClass}>${processInline(text)}</li>`;
+        });
+
+        // Process ordered list items
+        html = html.replace(/^(\s*)(\d+)\. (.+)$/gm, (match, spaces, num, text) => {
+            const indentLevel = Math.floor(spaces.length / 2);
+            const indentClass = indentLevel > 0 ? ` class="indent-${indentLevel}"` : '';
+            return `<li${indentClass} data-number="${num}">${processInline(text)}</li>`;
+        });
+
+        // Process blockquotes and horizontal rules
+        html = html
+            .replace(/^> (.+)$/gm, (match, text) => `<blockquote>${processInline(text)}</blockquote>`)
             .replace(/^---$/gm, '<hr>');
             
-        // Process tables
+        // Process tables with improved detection
         const lines = html.split('\n');
         let inTable = false;
         let tableHtml = '';
         let processedLines = [];
-        
+
+        // Helper to check if line is a valid table row (has | and at least 2 cells)
+        function isTableRow(line) {
+            const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+            return line.includes('|') && cells.length >= 2;
+        }
+
+        // Helper to check if line is a table separator (| --- | --- |)
+        function isTableSeparator(line) {
+            if (!line.includes('|') || !line.includes('-')) return false;
+            const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+            return cells.length > 0 && cells.every(cell => /^-+:?$|^:-+$|^:-+:$/.test(cell));
+        }
+
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            
+
             // Check if this line is a table row
-            if (line.includes('|')) {
+            if (isTableRow(line) && !isTableSeparator(line)) {
                 const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
-                
+
                 if (cells.length > 0) {
                     if (!inTable) {
-                        // Start a new table
-                        tableHtml = '<table>\n';
-                        inTable = true;
-                        
-                        // First row is header
-                        tableHtml += '<thead><tr>';
-                        cells.forEach(cell => {
-                            tableHtml += `<th>${cell}</th>`;
-                        });
-                        tableHtml += '</tr></thead>\n';
-                        
-                        // Check if next line is separator
-                        if (i + 1 < lines.length && lines[i + 1].includes('|') && lines[i + 1].includes('-')) {
-                            i++; // Skip separator line
+                        // Check if next line is a separator to confirm this is a table
+                        const nextLine = i + 1 < lines.length ? lines[i + 1] : '';
+                        if (isTableSeparator(nextLine)) {
+                            // Start a new table
+                            tableHtml = '<table>\n';
+                            inTable = true;
+
+                            // First row is header
+                            tableHtml += '<thead><tr>';
+                            cells.forEach(cell => {
+                                tableHtml += `<th>${processInline(cell)}</th>`;
+                            });
+                            tableHtml += '</tr></thead>\n';
+
+                            // Skip separator line
+                            i++;
                             tableHtml += '<tbody>\n';
+                        } else {
+                            // Not a table, just a line with pipes
+                            processedLines.push(line);
                         }
                     } else {
                         // Body row
                         tableHtml += '<tr>';
                         cells.forEach(cell => {
-                            tableHtml += `<td>${cell}</td>`;
+                            tableHtml += `<td>${processInline(cell)}</td>`;
                         });
                         tableHtml += '</tr>\n';
                     }
                 }
+            } else if (isTableSeparator(line) && !inTable) {
+                // Skip standalone separator lines
+                processedLines.push(line);
             } else {
                 // Not a table line
                 if (inTable) {
@@ -91,40 +184,45 @@
                 processedLines.push(line);
             }
         }
-        
+
         // Close table if still open
         if (inTable) {
             tableHtml += '</tbody></table>\n';
             processedLines.push(tableHtml);
         }
-        
+
         html = processedLines.join('\n');
             
-        // For now, let's use a simpler approach - just wrap lists
-        // First, let's handle multi-line content by preserving line breaks temporarily
+        // Wrap consecutive list items in appropriate list tags
+        // First, preserve line breaks temporarily
         html = html.replace(/\n/g, '|||NEWLINE|||');
-        
-        // Wrap consecutive li elements in ul
-        html = html.replace(/(<li.*?>.*?<\/li>(?:\|\|\|NEWLINE\|\|\|)?)+/g, (match) => {
+
+        // Wrap ordered list items (those with data-number attribute) in ol
+        html = html.replace(/(<li[^>]*data-number[^>]*>.*?<\/li>(?:\|\|\|NEWLINE\|\|\|)?)+/g, (match) => {
+            return '<ol>' + match + '</ol>';
+        });
+
+        // Wrap remaining unordered list items in ul
+        html = html.replace(/(<li(?![^>]*data-number)[^>]*>.*?<\/li>(?:\|\|\|NEWLINE\|\|\|)?)+/g, (match) => {
             return '<ul>' + match + '</ul>';
         });
-        
+
         // Restore line breaks
         html = html.replace(/\|\|\|NEWLINE\|\|\|/g, '\n');
-        
+
         return html;
     }
     
     // Simple HTML to markdown - just extract the text
     function htmlToMarkdown(element) {
         let text = '';
-        
+
         function walk(node) {
             if (node.nodeType === Node.TEXT_NODE) {
                 text += node.textContent;
             } else if (node.nodeType === Node.ELEMENT_NODE) {
                 const tag = node.tagName.toLowerCase();
-                
+
                 // Add markdown syntax based on tag
                 switch(tag) {
                     case 'h1':
@@ -142,6 +240,21 @@
                         walkChildren(node);
                         text += '\n';
                         break;
+                    case 'h4':
+                        text += '#### ';
+                        walkChildren(node);
+                        text += '\n';
+                        break;
+                    case 'h5':
+                        text += '##### ';
+                        walkChildren(node);
+                        text += '\n';
+                        break;
+                    case 'h6':
+                        text += '###### ';
+                        walkChildren(node);
+                        text += '\n';
+                        break;
                     case 'strong':
                     case 'b':
                         text += '**';
@@ -154,6 +267,13 @@
                         walkChildren(node);
                         text += '*';
                         break;
+                    case 'del':
+                    case 's':
+                    case 'strike':
+                        text += '~~';
+                        walkChildren(node);
+                        text += '~~';
+                        break;
                     case 'li':
                         // Check indentation level from class
                         let indent = '';
@@ -163,12 +283,16 @@
                                 indent = '  '.repeat(parseInt(match[1]));
                             }
                         }
-                        
+
                         // Check if it has a checkbox
                         const checkbox = node.querySelector('input[type="checkbox"]');
                         if (checkbox) {
                             text += indent + (checkbox.checked ? '- [x] ' : '- [ ] ');
+                        } else if (node.hasAttribute('data-number')) {
+                            // Ordered list item
+                            text += indent + node.getAttribute('data-number') + '. ';
                         } else {
+                            // Regular unordered list item
                             text += indent + '- ';
                         }
                         walkChildren(node);
@@ -178,10 +302,16 @@
                         text += '\n';
                         break;
                     case 'ul':
+                    case 'ol':
                         walkChildren(node);
                         break;
                     case 'pre':
-                        text += '```\n';
+                        const codeElement = node.querySelector('code');
+                        const langClass = codeElement?.className || '';
+                        const langMatch = langClass.match(/language-(\w+)/);
+                        const lang = langMatch ? langMatch[1] : '';
+
+                        text += '```' + lang + '\n';
                         walkChildren(node);
                         text += '\n```\n';
                         break;
@@ -203,6 +333,11 @@
                     case 'hr':
                         text += '---\n';
                         break;
+                    case 'img':
+                        const alt = node.getAttribute('alt') || '';
+                        const src = node.getAttribute('src') || '';
+                        text += `![${alt}](${src})`;
+                        break;
                     case 'a':
                         text += '[';
                         walkChildren(node);
@@ -210,24 +345,24 @@
                         text += '](' + href + ')';
                         break;
                     case 'table':
-                        // Extract table structure
+                        // Extract table structure and preserve inline formatting
                         const thead = node.querySelector('thead');
                         const tbody = node.querySelector('tbody');
-                        
+
                         if (thead) {
                             const headerRow = thead.querySelector('tr');
                             if (headerRow) {
                                 const headers = Array.from(headerRow.querySelectorAll('th'));
-                                text += '| ' + headers.map(th => th.textContent.trim()).join(' | ') + ' |\n';
+                                text += '| ' + headers.map(th => getInnerMarkdown(th)).join(' | ') + ' |\n';
                                 text += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
                             }
                         }
-                        
+
                         if (tbody) {
                             const rows = tbody.querySelectorAll('tr');
                             rows.forEach(row => {
                                 const cells = Array.from(row.querySelectorAll('td'));
-                                text += '| ' + cells.map(td => td.textContent.trim()).join(' | ') + ' |\n';
+                                text += '| ' + cells.map(td => getInnerMarkdown(td)).join(' | ') + ' |\n';
                             });
                         }
                         break;
@@ -243,19 +378,78 @@
                 }
             }
         }
-        
+
+        // Helper function to extract markdown from inline elements
+        function getInnerMarkdown(element) {
+            let markdown = '';
+
+            function walkInline(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    markdown += node.textContent;
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tag = node.tagName.toLowerCase();
+
+                    switch(tag) {
+                        case 'strong':
+                        case 'b':
+                            markdown += '**';
+                            for (let child of node.childNodes) walkInline(child);
+                            markdown += '**';
+                            break;
+                        case 'em':
+                        case 'i':
+                            markdown += '*';
+                            for (let child of node.childNodes) walkInline(child);
+                            markdown += '*';
+                            break;
+                        case 'del':
+                        case 's':
+                        case 'strike':
+                            markdown += '~~';
+                            for (let child of node.childNodes) walkInline(child);
+                            markdown += '~~';
+                            break;
+                        case 'code':
+                            markdown += '`';
+                            for (let child of node.childNodes) walkInline(child);
+                            markdown += '`';
+                            break;
+                        case 'a':
+                            markdown += '[';
+                            for (let child of node.childNodes) walkInline(child);
+                            const href = node.getAttribute('data-href') || node.href || '#';
+                            markdown += '](' + href + ')';
+                            break;
+                        case 'img':
+                            const alt = node.getAttribute('alt') || '';
+                            const src = node.getAttribute('src') || '';
+                            markdown += `![${alt}](${src})`;
+                            break;
+                        default:
+                            for (let child of node.childNodes) walkInline(child);
+                    }
+                }
+            }
+
+            for (let child of element.childNodes) {
+                walkInline(child);
+            }
+
+            return markdown.trim();
+        }
+
         function walkChildren(node) {
             for (let child of node.childNodes) {
                 // Skip checkbox inputs when walking children
-                if (child.nodeType === Node.ELEMENT_NODE && 
-                    child.tagName === 'INPUT' && 
+                if (child.nodeType === Node.ELEMENT_NODE &&
+                    child.tagName === 'INPUT' &&
                     child.type === 'checkbox') {
                     continue;
                 }
                 walk(child);
             }
         }
-        
+
         walk(element);
         return text.trim();
     }

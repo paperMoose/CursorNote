@@ -35,9 +35,15 @@ body {
     margin-bottom: 16px;
 }
 
-#editor li {
+#editor ul li {
     margin-bottom: 4px;
     list-style: disc;
+    list-style-position: inside;
+}
+
+#editor ol li {
+    margin-bottom: 4px;
+    list-style: decimal;
     list-style-position: inside;
 }
 
@@ -125,6 +131,13 @@ body {
 
 #editor a:hover {
     text-decoration: underline;
+}
+
+#editor del,
+#editor s,
+#editor strike {
+    text-decoration: line-through;
+    opacity: 0.7;
 }
 
 #editor hr {
