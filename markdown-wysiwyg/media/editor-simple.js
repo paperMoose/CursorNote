@@ -210,6 +210,23 @@
         // Restore line breaks
         html = html.replace(/\|\|\|NEWLINE\|\|\|/g, '\n');
 
+        // Process paragraphs - wrap non-HTML lines in <p> tags and process inline markdown
+        const finalLines = html.split('\n');
+        const processedFinalLines = finalLines.map(line => {
+            const trimmed = line.trim();
+
+            // Skip empty lines
+            if (!trimmed) return line;
+
+            // Skip lines that are already HTML tags
+            if (trimmed.startsWith('<')) return line;
+
+            // This is a plain text line - wrap in <p> and process inline markdown
+            return `<p>${processInline(trimmed)}</p>`;
+        });
+
+        html = processedFinalLines.join('\n');
+
         return html;
     }
     
@@ -254,6 +271,10 @@
                         text += '###### ';
                         walkChildren(node);
                         text += '\n';
+                        break;
+                    case 'p':
+                        walkChildren(node);
+                        text += '\n\n';
                         break;
                     case 'strong':
                     case 'b':
