@@ -2,7 +2,7 @@
   "name": "markdown-wysiwyg",
   "displayName": "Markdown WYSIWYG Editor",
   "description": "Notion-like WYSIWYG editor for Markdown files with auto-rendering, bold/italic, blockquotes, footnotes, and multi-column layouts",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "your-publisher-name",
   "repository": {
     "type": "git",
