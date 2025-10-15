@@ -30,6 +30,9 @@
         // Process images (must come before links)
         text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
 
+        // Process footnote references (must come before regular links)
+        text = text.replace(/\[\^([^\]]+)\]/g, '<sup class="footnote-ref"><a href="#fn-$1" id="fnref-$1">[$1]</a></sup>');
+
         // Process links
         text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="javascript:void(0)" data-href="$2">$1</a>');
 
@@ -106,10 +109,43 @@
             return `<li${indentClass} data-number="${num}">${processInline(text)}</li>`;
         });
 
-        // Process blockquotes and horizontal rules
-        html = html
-            .replace(/^> (.+)$/gm, (match, text) => `<blockquote>${processInline(text)}</blockquote>`)
-            .replace(/^---$/gm, '<hr>');
+        // Process horizontal rules first
+        html = html.replace(/^---$/gm, '<hr>');
+
+        // Process blockquotes (handle multi-line blockquotes)
+        const blockquoteLines = html.split('\n');
+        let inBlockquote = false;
+        let blockquoteContent = '';
+        const processedBlockquoteLines = [];
+
+        for (let line of blockquoteLines) {
+            if (line.trim().startsWith('&gt;')) {
+                // This is a blockquote line
+                const content = line.replace(/^&gt;\s*/, '');
+                if (!inBlockquote) {
+                    inBlockquote = true;
+                    blockquoteContent = content;
+                } else {
+                    blockquoteContent += '\n' + content;
+                }
+            } else {
+                // Not a blockquote line
+                if (inBlockquote) {
+                    // Close the blockquote
+                    processedBlockquoteLines.push(`<blockquote>${processInline(blockquoteContent)}</blockquote>`);
+                    inBlockquote = false;
+                    blockquoteContent = '';
+                }
+                processedBlockquoteLines.push(line);
+            }
+        }
+
+        // Close any open blockquote
+        if (inBlockquote) {
+            processedBlockquoteLines.push(`<blockquote>${processInline(blockquoteContent)}</blockquote>`);
+        }
+
+        html = processedBlockquoteLines.join('\n');
             
         // Process tables with improved detection
         const lines = html.split('\n');
@@ -210,22 +246,48 @@
         // Restore line breaks
         html = html.replace(/\|\|\|NEWLINE\|\|\|/g, '\n');
 
-        // Process paragraphs - wrap non-HTML lines in <p> tags and process inline markdown
+        // Extract and process footnote definitions
+        const footnotes = {};
         const finalLines = html.split('\n');
-        const processedFinalLines = finalLines.map(line => {
+        const processedFinalLines = [];
+
+        for (let line of finalLines) {
             const trimmed = line.trim();
 
+            // Check for footnote definition: [^id]: text
+            const footnoteMatch = trimmed.match(/^\[\^([^\]]+)\]:\s*(.+)$/);
+            if (footnoteMatch) {
+                const [, id, content] = footnoteMatch;
+                footnotes[id] = processInline(content);
+                continue; // Don't add this line to output (it's a definition)
+            }
+
             // Skip empty lines
-            if (!trimmed) return line;
+            if (!trimmed) {
+                processedFinalLines.push(line);
+                continue;
+            }
 
             // Skip lines that are already HTML tags
-            if (trimmed.startsWith('<')) return line;
+            if (trimmed.startsWith('<')) {
+                processedFinalLines.push(line);
+                continue;
+            }
 
             // This is a plain text line - wrap in <p> and process inline markdown
-            return `<p>${processInline(trimmed)}</p>`;
-        });
+            processedFinalLines.push(`<p>${processInline(trimmed)}</p>`);
+        }
 
         html = processedFinalLines.join('\n');
+
+        // Append footnotes section if any footnotes were found
+        if (Object.keys(footnotes).length > 0) {
+            html += '\n<hr>\n<div class="footnotes"><ol>';
+            for (const [id, content] of Object.entries(footnotes)) {
+                html += `\n<li id="fn-${id}">${content} <a href="#fnref-${id}" class="footnote-backref">↩</a></li>`;
+            }
+            html += '\n</ol></div>';
+        }
 
         return html;
     }
@@ -347,9 +409,16 @@
                         }
                         break;
                     case 'blockquote':
-                        text += '> ';
+                        // Get blockquote content and prefix each line with >
+                        const blockquoteStart = text.length;
                         walkChildren(node);
-                        text += '\n';
+                        const blockquoteEnd = text.length;
+                        const blockquoteText = text.substring(blockquoteStart, blockquoteEnd);
+                        // Remove the content we just added
+                        text = text.substring(0, blockquoteStart);
+                        // Add back with > prefix on each line
+                        const lines = blockquoteText.split('\n');
+                        text += lines.map(line => '> ' + line).join('\n') + '\n\n';
                         break;
                     case 'hr':
                         text += '---\n';

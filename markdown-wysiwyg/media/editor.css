@@ -76,6 +76,36 @@ body {
     color: #6a737d;
     border-left: 0.25em solid #dfe2e5;
     margin: 0 0 16px 0;
+    white-space: pre-wrap;
+}
+
+/* Footnotes */
+#editor .footnotes {
+    margin-top: 32px;
+    padding-top: 16px;
+    font-size: 0.9em;
+}
+
+#editor .footnotes ol {
+    padding-left: 1.5em;
+}
+
+#editor .footnotes li {
+    margin-bottom: 8px;
+    list-style: decimal;
+}
+
+#editor .footnote-ref {
+    font-size: 0.8em;
+}
+
+#editor .footnote-ref a {
+    text-decoration: none;
+}
+
+#editor .footnote-backref {
+    text-decoration: none;
+    margin-left: 4px;
 }
 
 #editor code {
@@ -200,6 +230,11 @@ body {
     
     #editor hr {
         background-color: #313131;
+    }
+
+    #editor blockquote {
+        color: #8b949e;
+        border-left-color: #3b434b;
     }
 }
 
