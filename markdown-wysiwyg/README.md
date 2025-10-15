@@ -14,6 +14,7 @@ A Notion-like WYSIWYG editor for VS Code that makes editing Markdown files natur
 📋 **Tables** - Visual table editing and rendering
 ✅ **Task lists** - Interactive checkboxes
 🎯 **Smart rendering** - Auto-renders markdown patterns on the fly
+📐 **Column layouts** - Multi-column content for side-by-side comparisons
 
 ## Supported Markdown
 
@@ -29,6 +30,7 @@ A Notion-like WYSIWYG editor for VS Code that makes editing Markdown files natur
 - **Horizontal rules** `---`
 - **Images** `![alt](url)`
 - **Strikethrough** `~~text~~`
+- **Column layouts** - Multi-column content using `<div class="columns">` and `<div class="column">`
 
 ## Keyboard Shortcuts
 
@@ -62,6 +64,35 @@ To make it the default editor for all markdown files:
 Your files remain as `.md` files. To edit with Cursor AI:
 - **Option 1**: Tell Cursor what you want (e.g., "add a table of contents")
 - **Option 2**: Right-click → "Open With... → Text Editor" for raw markdown
+
+## Column Layouts
+
+Create multi-column layouts for side-by-side content. Perfect for comparisons, documentation, and visual layouts.
+
+**Syntax:**
+```markdown
+<div class="columns">
+<div class="column">
+
+Content in left column with **bold**, lists, etc.
+
+</div>
+<div class="column">
+
+Content in right column with code, tables, etc.
+
+</div>
+</div>
+```
+
+**Use cases:**
+- Product comparisons
+- Before/after examples
+- Side-by-side code samples
+- Documentation layouts
+- Meeting notes with agenda and action items
+
+See `test-column-demo.md` for comprehensive examples.
 
 ## Development
 
