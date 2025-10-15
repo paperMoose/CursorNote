@@ -30,6 +30,14 @@ body {
     margin-bottom: 16px;
 }
 
+#editor strong, #editor b {
+    font-weight: 600;
+}
+
+#editor em, #editor i {
+    font-style: italic;
+}
+
 #editor ul, #editor ol {
     padding-left: 2em;
     margin-bottom: 16px;

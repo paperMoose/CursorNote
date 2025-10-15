@@ -9,6 +9,16 @@ const patterns = [
         name: 'list',
         test: (line) => /^[\-\*]\s/.test(line),
         description: 'Lists: - or *'
+    },
+    {
+        name: 'bold',
+        test: (line) => /\*\*[^*]+\*\*/.test(line),
+        description: 'Bold: **text**'
+    },
+    {
+        name: 'italic',
+        test: (line) => /\*[^*]+\*/.test(line),
+        description: 'Italic: *text*'
     }
 ];
 
