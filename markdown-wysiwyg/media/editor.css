@@ -186,6 +186,28 @@ body {
     border: 0;
 }
 
+/* Column layout support */
+#editor .columns {
+    display: flex;
+    gap: 20px;
+    margin: 16px 0;
+    align-items: flex-start;
+}
+
+#editor .column {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Ensure columns don't create extra spacing */
+#editor .columns > .column > *:first-child {
+    margin-top: 0;
+}
+
+#editor .columns > .column > *:last-child {
+    margin-bottom: 0;
+}
+
 /* Dark theme support */
 @media (prefers-color-scheme: dark) {
     body {

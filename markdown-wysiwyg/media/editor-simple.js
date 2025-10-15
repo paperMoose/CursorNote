@@ -68,6 +68,15 @@
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
 
+        // Process column layouts - restore div tags for columns before other processing
+        // Match: <div class="columns">...</div> and <div class="column">...</div>
+        html = html.replace(/&lt;div class=&quot;columns&quot;&gt;/g, '<div class="columns">');
+        html = html.replace(/&lt;div class="columns"&gt;/g, '<div class="columns">');
+        html = html.replace(/&lt;div class=&quot;column&quot;&gt;/g, '<div class="column">');
+        html = html.replace(/&lt;div class="column"&gt;/g, '<div class="column">');
+        html = html.replace(/&lt;\/div&gt;/g, '</div>');
+        html = html.replace(/&lt;\/div>/g, '</div>');
+
         // Process code blocks with language hints
         html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
             const langClass = lang ? ` class="language-${lang}"` : '';
@@ -462,6 +471,21 @@
                     case 'th':
                     case 'td':
                         // Skip these as they're handled by the table case
+                        break;
+                    case 'div':
+                        // Handle column layouts
+                        if (node.className === 'columns') {
+                            text += '<div class="columns">\n';
+                            walkChildren(node);
+                            text += '</div>\n\n';
+                        } else if (node.className === 'column') {
+                            text += '<div class="column">\n\n';
+                            walkChildren(node);
+                            text += '\n</div>\n';
+                        } else {
+                            // Regular div, just walk children
+                            walkChildren(node);
+                        }
                         break;
                     default:
                         walkChildren(node);
