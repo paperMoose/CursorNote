@@ -1,29 +1,34 @@
 # Markdown WYSIWYG Editor
 
-
-A simple, reliable VS Code extension that provides a Notion-like WYSIWYG editing experience for Markdown files.
+A Notion-like WYSIWYG editor for VS Code that makes editing Markdown files natural and intuitive.
 
 ## Features
 
-
-- **True WYSIWYG editing** - Edit formatted text directly, no split view needed
-- **Real-time sync** - Changes are automatically saved to your .md file
-- **Clean, minimal UI** - GitHub-flavored markdown styling
-- **Dark mode support** - Automatically adapts to your VS Code theme
-- **Floating toolbar** - Easy access to formatting options
-- **Cursor AI compatible** - Works seamlessly with Cursor's AI features
+✨ **Real-time rendering** - See formatting as you type
+📝 **True WYSIWYG** - Edit formatted text directly, no split view
+⚡ **Auto-sync** - Changes automatically save to `.md` files
+🎨 **GitHub-flavored** - Familiar markdown styling
+🌓 **Dark mode** - Adapts to your VS Code theme
+🔗 **Footnotes** - Full citation support with automatic reference linking
+💬 **Blockquotes** - Multi-line blockquote support
+📋 **Tables** - Visual table editing and rendering
+✅ **Task lists** - Interactive checkboxes
+🎯 **Smart rendering** - Auto-renders markdown patterns on the fly
 
 ## Supported Markdown
 
-
-- **Headers** (H1-H3)
-- **Bold** and **italic** text
-- **Lists** (bullet points)
-- **Checkboxes** (task lists)
-- **Code blocks** and `inline code`
-- **Blockquotes**
-- **Horizontal rules**
-- **Links** (click to open files)
+- **Headers** (H1-H6)
+- **Bold** (`**text**` or `__text__`) and *italic* (`*text*` or `_text*`) formatting
+- **Bullet lists** and **numbered lists** with indentation
+- **Task lists** with interactive checkboxes `- [ ]` and `- [x]`
+- **Blockquotes** - Multi-line with `>` prefix
+- **Footnotes** - References `[^id]` and definitions `[^id]: text`
+- **Links** `[text](url)` - Click to open files/URLs
+- **Inline code** `` `code` `` and code blocks with language hints
+- **Tables** with headers and borders
+- **Horizontal rules** `---`
+- **Images** `![alt](url)`
+- **Strikethrough** `~~text~~`
 
 ## Keyboard Shortcuts
 
