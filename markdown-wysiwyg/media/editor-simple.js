@@ -534,6 +534,41 @@
         }
     });
     
+    // Check if line contains patterns that should trigger re-rendering
+    function shouldReRender(text) {
+        return (
+            /^#{1,6}\s/.test(text) ||           // Headers
+            /^[\-\*]\s/.test(text) ||            // Lists
+            /\*\*[^*]+\*\*/.test(text) ||        // Bold
+            /\*[^*]+\*/.test(text) ||            // Italic
+            /~~.+?~~/.test(text) ||              // Strikethrough
+            /`[^`]+`/.test(text) ||              // Inline code
+            /\[.+?\]\(.+?\)/.test(text)          // Links
+        );
+    }
+
+    // Get current line text
+    function getCurrentLineText() {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return '';
+
+        const range = selection.getRangeAt(0);
+        let node = range.startContainer;
+
+        // Find the block-level element
+        while (node && node !== editor) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                const tag = node.tagName.toLowerCase();
+                if (['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'].includes(tag)) {
+                    return node.textContent || '';
+                }
+            }
+            node = node.parentNode;
+        }
+
+        return '';
+    }
+
     // Handle typing - let the browser handle bold/italic naturally
     editor.addEventListener('input', () => {
         if (!isInternalUpdate) {
@@ -542,6 +577,23 @@
                 type: 'edit',
                 text: markdown
             });
+
+            // Check if we should re-render
+            const currentLine = getCurrentLineText();
+            if (shouldReRender(currentLine)) {
+                // Small delay to let the character get added
+                setTimeout(() => {
+                    const cursorPos = getCursorOffset();
+
+                    isInternalUpdate = true;
+                    editor.innerHTML = markdownToHtml(markdown);
+                    isInternalUpdate = false;
+
+                    requestAnimationFrame(() => {
+                        setCursorOffset(Math.min(cursorPos, editor.textContent.length));
+                    });
+                }, 10);
+            }
         }
     });
     
