@@ -7,83 +7,111 @@ class MarkdownEditorProvider {
         this.context = context;
     }
     async resolveCustomTextEditor(document, webviewPanel, _token) {
-        webviewPanel.webview.options = {
-            enableScripts: true,
-            localResourceRoots: [
-                vscode.Uri.joinPath(this.context.extensionUri, 'media'),
-                vscode.Uri.joinPath(this.context.extensionUri, 'node_modules')
-            ]
-        };
-        webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
-        function updateWebview() {
-            webviewPanel.webview.postMessage({
-                type: 'update',
-                text: document.getText(),
+        try {
+            console.log(`[markdown-wysiwyg] resolveCustomTextEditor called: ${document.uri.toString()}`);
+            console.log(`[markdown-wysiwyg] Document line count: ${document.lineCount}`);
+            console.log(`[markdown-wysiwyg] Document language: ${document.languageId}`);
+            const startTime = Date.now();
+            webviewPanel.webview.options = {
+                enableScripts: true,
+                localResourceRoots: [
+                    vscode.Uri.joinPath(this.context.extensionUri, 'media'),
+                    vscode.Uri.joinPath(this.context.extensionUri, 'node_modules')
+                ]
+            };
+            webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
+            const updateWebview = () => {
+                try {
+                    webviewPanel.webview.postMessage({
+                        type: 'update',
+                        text: document.getText(),
+                    });
+                }
+                catch (error) {
+                    console.error('[markdown-wysiwyg] Failed to post update message', error);
+                }
+            };
+            // Track if we're making edits to prevent loops
+            let makingEdit = false;
+            const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
+                if (e.document.uri.toString() === document.uri.toString() && !makingEdit) {
+                    updateWebview();
+                }
             });
-        }
-        // Track if we're making edits to prevent loops
-        let makingEdit = false;
-        const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
-            if (e.document.uri.toString() === document.uri.toString() && !makingEdit) {
-                updateWebview();
-            }
-        });
-        webviewPanel.onDidDispose(() => {
-            changeDocumentSubscription.dispose();
-        });
-        webviewPanel.webview.onDidReceiveMessage(async (e) => {
-            switch (e.type) {
-                case 'edit':
-                    makingEdit = true;
-                    await this.updateTextDocument(document, e.text);
-                    makingEdit = false;
-                    return;
-                case 'openFile':
-                    const filePath = e.path;
-                    let fileUri;
-                    // Handle different path types
-                    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-                        // External URL
-                        vscode.env.openExternal(vscode.Uri.parse(filePath));
-                        return;
-                    }
-                    else if (filePath.startsWith('/')) {
-                        // Absolute path
-                        fileUri = vscode.Uri.file(filePath);
-                    }
-                    else {
-                        // Relative path - resolve from current document's directory
-                        const currentDir = vscode.Uri.joinPath(document.uri, '..');
-                        fileUri = vscode.Uri.joinPath(currentDir, filePath);
-                    }
-                    try {
-                        // Check if file exists
-                        await vscode.workspace.fs.stat(fileUri);
-                        // Try to open as text document
-                        const doc = await vscode.workspace.openTextDocument(fileUri);
-                        await vscode.window.showTextDocument(doc, { preview: false });
-                    }
-                    catch (error) {
-                        // If file doesn't exist, try from workspace root
-                        if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
-                            const workspaceRoot = vscode.workspace.workspaceFolders[0].uri;
-                            const workspaceFileUri = vscode.Uri.joinPath(workspaceRoot, filePath);
+            webviewPanel.onDidDispose(() => {
+                changeDocumentSubscription.dispose();
+            });
+            webviewPanel.webview.onDidReceiveMessage(async (e) => {
+                try {
+                    switch (e.type) {
+                        case 'edit':
+                            makingEdit = true;
+                            await this.updateTextDocument(document, e.text);
+                            makingEdit = false;
+                            return;
+                        case 'openFile':
+                            const filePath = e.path;
+                            let fileUri;
+                            // Handle different path types
+                            if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+                                // External URL
+                                vscode.env.openExternal(vscode.Uri.parse(filePath));
+                                return;
+                            }
+                            else if (filePath.startsWith('/')) {
+                                // Absolute path
+                                fileUri = vscode.Uri.file(filePath);
+                            }
+                            else {
+                                // Relative path - resolve from current document's directory
+                                const currentDir = vscode.Uri.joinPath(document.uri, '..');
+                                fileUri = vscode.Uri.joinPath(currentDir, filePath);
+                            }
                             try {
-                                const doc = await vscode.workspace.openTextDocument(workspaceFileUri);
+                                // Check if file exists
+                                await vscode.workspace.fs.stat(fileUri);
+                                // Try to open as text document
+                                const doc = await vscode.workspace.openTextDocument(fileUri);
                                 await vscode.window.showTextDocument(doc, { preview: false });
                             }
-                            catch (err) {
-                                vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
+                            catch (error) {
+                                console.error('[markdown-wysiwyg] Failed to open file from link', filePath, error);
+                                // If file doesn't exist, try from workspace root
+                                if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+                                    const workspaceRoot = vscode.workspace.workspaceFolders[0].uri;
+                                    const workspaceFileUri = vscode.Uri.joinPath(workspaceRoot, filePath);
+                                    try {
+                                        const doc = await vscode.workspace.openTextDocument(workspaceFileUri);
+                                        await vscode.window.showTextDocument(doc, { preview: false });
+                                    }
+                                    catch (err) {
+                                        console.error('[markdown-wysiwyg] Also failed to open from workspace root', workspaceFileUri.toString(), err);
+                                        vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
+                                    }
+                                }
+                                else {
+                                    vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
+                                }
                             }
-                        }
-                        else {
-                            vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
-                        }
+                            return;
                     }
-                    return;
+                }
+                catch (err) {
+                    console.error('[markdown-wysiwyg] Error handling message from webview', err);
+                }
+            });
+            try {
+                updateWebview();
             }
-        });
-        updateWebview();
+            finally {
+                console.log(`[markdown-wysiwyg] resolveCustomTextEditor completed setup in ${Date.now() - startTime}ms`);
+            }
+        }
+        catch (error) {
+            console.error('[markdown-wysiwyg] FATAL ERROR in resolveCustomTextEditor:', error);
+            vscode.window.showErrorMessage(`Markdown WYSIWYG Editor failed to load: ${error}`);
+            throw error;
+        }
     }
     getHtmlForWebview(webview) {
         const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'editor.css'));

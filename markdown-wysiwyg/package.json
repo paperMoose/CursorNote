@@ -22,8 +22,12 @@
   "engines": {
     "vscode": "^1.74.0"
   },
-  "categories": ["Other"],
-  "activationEvents": [],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCustomEditor:markdownWysiwyg.editor"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "customEditors": [
@@ -35,7 +39,7 @@
             "filenamePattern": "*.md"
           }
         ],
-        "priority": "default"
+        "priority": "option"
       }
     ]
   },

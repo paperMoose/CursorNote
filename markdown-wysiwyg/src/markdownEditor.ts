@@ -12,6 +12,13 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
+        try {
+            console.log(`[markdown-wysiwyg] resolveCustomTextEditor called: ${document.uri.toString()}`);
+            console.log(`[markdown-wysiwyg] Document line count: ${document.lineCount}`);
+            console.log(`[markdown-wysiwyg] Document language: ${document.languageId}`);
+
+            const startTime = Date.now();
+
         webviewPanel.webview.options = {
             enableScripts: true,
             localResourceRoots: [
@@ -22,11 +29,15 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         
         webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
         
-        function updateWebview() {
-            webviewPanel.webview.postMessage({
-                type: 'update',
-                text: document.getText(),
-            });
+        const updateWebview = () => {
+            try {
+                webviewPanel.webview.postMessage({
+                    type: 'update',
+                    text: document.getText(),
+                });
+            } catch (error) {
+                console.error('[markdown-wysiwyg] Failed to post update message', error);
+            }
         }
         
         // Track if we're making edits to prevent loops
@@ -43,7 +54,8 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
         });
         
         webviewPanel.webview.onDidReceiveMessage(async e => {
-            switch (e.type) {
+            try {
+                switch (e.type) {
                 case 'edit':
                     makingEdit = true;
                     await this.updateTextDocument(document, e.text);
@@ -74,6 +86,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
                         const doc = await vscode.workspace.openTextDocument(fileUri);
                         await vscode.window.showTextDocument(doc, { preview: false });
                     } catch (error) {
+                        console.error('[markdown-wysiwyg] Failed to open file from link', filePath, error);
                         // If file doesn't exist, try from workspace root
                         if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
                             const workspaceRoot = vscode.workspace.workspaceFolders[0].uri;
@@ -82,6 +95,7 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
                                 const doc = await vscode.workspace.openTextDocument(workspaceFileUri);
                                 await vscode.window.showTextDocument(doc, { preview: false });
                             } catch (err) {
+                                console.error('[markdown-wysiwyg] Also failed to open from workspace root', workspaceFileUri.toString(), err);
                                 vscode.window.showErrorMessage(`Could not open file: ${filePath}`);
                             }
                         } else {
@@ -90,9 +104,21 @@ export class MarkdownEditorProvider implements vscode.CustomTextEditorProvider {
                     }
                     return;
             }
+            } catch (err) {
+                console.error('[markdown-wysiwyg] Error handling message from webview', err);
+            }
         });
         
-        updateWebview();
+            try {
+                updateWebview();
+            } finally {
+                console.log(`[markdown-wysiwyg] resolveCustomTextEditor completed setup in ${Date.now() - startTime}ms`);
+            }
+        } catch (error) {
+            console.error('[markdown-wysiwyg] FATAL ERROR in resolveCustomTextEditor:', error);
+            vscode.window.showErrorMessage(`Markdown WYSIWYG Editor failed to load: ${error}`);
+            throw error;
+        }
     }
     
     private getHtmlForWebview(webview: vscode.Webview): string {
