@@ -7,6 +7,12 @@
     
     // Helper function to process inline markdown formatting
     function processInline(text) {
+        // Skip processing for custom command syntax (e.g., @reminder, @imessage)
+        if (text.trim().startsWith('@')) {
+            // Escape HTML but don't process as markdown
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        
         // Store escaped characters temporarily
         const escapeMap = new Map();
         let escapeIndex = 0;
@@ -33,8 +39,16 @@
         // Process footnote references (must come before regular links)
         text = text.replace(/\[\^([^\]]+)\]/g, '<sup class="footnote-ref"><a href="#fn-$1" id="fnref-$1">[$1]</a></sup>');
 
-        // Process links
-        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="javascript:void(0)" data-href="$2">$1</a>');
+        // Process links - handle custom protocols like mdc: but skip malformed links
+        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
+            // Skip if URL contains @ (likely part of custom command syntax)
+            if (url.includes('@') && !url.match(/^https?:\/\//)) {
+                // Custom command syntax - preserve as-is
+                return match;
+            }
+            // Handle custom protocols like mdc: by creating clickable links
+            return `<a href="javascript:void(0)" data-href="${url.replace(/"/g, '&quot;')}">${linkText}</a>`;
+        });
 
         // Bold (must come before italic) - handle both ** and __
         text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -62,11 +76,12 @@
 
     // Simple markdown to HTML - just enough to display
     function markdownToHtml(markdown) {
-        // First escape HTML entities
-        let html = markdown
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
+        try {
+            // First escape HTML entities
+            let html = markdown
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
 
         // Process column layouts - restore div tags for columns before other processing
         // Match: <div class="columns">...</div> and <div class="column">...</div>
@@ -283,6 +298,13 @@
                 continue;
             }
 
+            // Skip custom command syntax (e.g., @reminder, @imessage, @calendar)
+            if (trimmed.startsWith('@')) {
+                // Display as code/monospace to distinguish from regular text
+                processedFinalLines.push(`<p><code>${trimmed.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></p>`);
+                continue;
+            }
+
             // This is a plain text line - wrap in <p> and process inline markdown
             processedFinalLines.push(`<p>${processInline(trimmed)}</p>`);
         }
@@ -299,6 +321,15 @@
         }
 
         return html;
+        } catch (error) {
+            console.error('Error parsing markdown:', error);
+            // Return escaped version as fallback
+            return markdown
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+        }
     }
     
     // Simple HTML to markdown - just extract the text
@@ -636,7 +667,13 @@
             const cursorPos = getCursorOffset();
             
             isInternalUpdate = true;
-            editor.innerHTML = markdownToHtml(message.text);
+            try {
+                editor.innerHTML = markdownToHtml(message.text);
+            } catch (error) {
+                console.error('Error updating editor:', error);
+                // Fallback: show raw markdown with basic escaping
+                editor.innerHTML = '<pre>' + message.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
+            }
             isInternalUpdate = false;
             
             // Try to restore cursor position
