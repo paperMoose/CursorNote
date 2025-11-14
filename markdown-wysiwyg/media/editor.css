@@ -1,37 +1,59 @@
 body {
-    padding: 20px;
-    max-width: 900px;
+    padding: 40px 20px;
+    max-width: 1200px;
     margin: 0 auto;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    line-height: 1.6;
+    line-height: 1.7;
+    background-color: #fafafa;
 }
 
 #editor {
     min-height: 400px;
     outline: none;
-    padding: 10px;
+    padding: 32px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 #editor h1, #editor h2, #editor h3, #editor h4, #editor h5, #editor h6 {
-    margin-top: 24px;
+    margin-top: 32px;
     margin-bottom: 16px;
     font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.3;
+    color: #1a1a1a;
+    letter-spacing: -0.02em;
 }
 
-#editor h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-#editor h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-#editor h3 { font-size: 1.25em; }
-#editor h4 { font-size: 1em; }
-#editor h5 { font-size: 0.875em; }
-#editor h6 { font-size: 0.85em; }
+#editor h1 { 
+    font-size: 2.2em; 
+    border-bottom: 2px solid #f0f0f0; 
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+}
+#editor h2 { 
+    font-size: 1.6em; 
+    border-bottom: 1px solid #f5f5f5; 
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+#editor h3 { 
+    font-size: 1.3em;
+    color: #2a2a2a;
+}
+#editor h4 { font-size: 1.1em; }
+#editor h5 { font-size: 0.95em; }
+#editor h6 { font-size: 0.9em; }
 
 #editor p {
     margin-bottom: 16px;
+    color: #3a3a3a;
+    font-size: 15px;
 }
 
 #editor strong, #editor b {
     font-weight: 600;
+    color: #1a1a1a;
 }
 
 #editor em, #editor i {
@@ -39,20 +61,34 @@ body {
 }
 
 #editor ul, #editor ol {
-    padding-left: 2em;
+    padding-left: 1.5em;
     margin-bottom: 16px;
 }
 
 #editor ul li {
-    margin-bottom: 4px;
-    list-style: disc;
+    margin-bottom: 8px;
+    list-style: none;
     list-style-position: inside;
+    color: #3a3a3a;
+    font-size: 15px;
+    position: relative;
+    padding-left: 8px;
+}
+
+#editor ul li::before {
+    content: "•";
+    color: #999;
+    font-weight: bold;
+    position: absolute;
+    left: -16px;
 }
 
 #editor ol li {
-    margin-bottom: 4px;
+    margin-bottom: 8px;
     list-style: decimal;
     list-style-position: inside;
+    color: #3a3a3a;
+    font-size: 15px;
 }
 
 #editor li[class*="indent-"] {
@@ -60,9 +96,38 @@ body {
 }
 
 #editor li input[type="checkbox"] {
-    margin-right: 8px;
+    margin-right: 10px;
     margin-left: -1.5em;
     cursor: pointer;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid #d0d0d0;
+    appearance: none;
+    -webkit-appearance: none;
+    background: white;
+    position: relative;
+    transition: all 0.15s ease;
+}
+
+#editor li input[type="checkbox"]:hover {
+    border-color: #999;
+}
+
+#editor li input[type="checkbox"]:checked {
+    background: #5b7ff5;
+    border-color: #5b7ff5;
+}
+
+#editor li input[type="checkbox"]:checked::after {
+    content: "✓";
+    position: absolute;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 /* Preserve indentation for nested items */
@@ -138,22 +203,42 @@ body {
 
 #editor table {
     border-collapse: collapse;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 #editor table th,
 #editor table td {
-    padding: 6px 13px;
-    border: 1px solid #dfe2e5;
+    padding: 12px 16px;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: left;
+    font-size: 15px;
+}
+
+#editor table th {
+    background-color: #fafafa;
+    font-weight: 600;
+    color: #1a1a1a;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.05em;
 }
 
 #editor table tr {
     background-color: #fff;
-    border-top: 1px solid #c6cbd1;
+    transition: background-color 0.15s ease;
+}
+
+#editor table tr:hover {
+    background-color: #fafafa;
 }
 
 #editor table tr:nth-child(2n) {
-    background-color: #f6f8fa;
+    background-color: #fcfcfc;
 }
 
 #editor img {
@@ -179,38 +264,37 @@ body {
 }
 
 #editor hr {
-    height: 0.25em;
+    height: 1px;
     padding: 0;
-    margin: 24px 0;
-    background-color: #e1e4e8;
+    margin: 40px 0;
+    background: linear-gradient(to right, transparent, #e8e8e8 20%, #e8e8e8 80%, transparent);
     border: 0;
 }
 
-/* Column layout support - Notion style */
+/* Column layout support - Clay style */
 #editor .columns {
     display: flex;
-    margin: 16px 0;
+    gap: 20px;
+    margin: 24px 0;
     align-items: flex-start;
 }
 
 #editor .column {
     flex: 1;
     min-width: 0;
-    padding: 12px 16px;
+    padding: 20px;
     margin: 0;
-    border-right: 1px solid rgba(0, 0, 0, 0.06);
-    transition: background-color 0.15s ease;
-    border-radius: 3px;
-}
-
-/* Remove border from last column */
-#editor .column:last-child {
-    border-right: none;
+    background: #fafafa;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
 }
 
 /* Subtle hover effect */
 #editor .column:hover {
-    background-color: rgba(0, 0, 0, 0.02);
+    background-color: #f7f7f7;
+    border-color: #e8e8e8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 /* Ensure columns don't create extra spacing */
@@ -222,132 +306,208 @@ body {
     margin-bottom: 0;
 }
 
-/* Dark theme support */
+/* Make column headers look nicer */
+#editor .column h3 {
+    color: #1a1a1a;
+    font-size: 1.1em;
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* Dark theme support - Clay style */
 @media (prefers-color-scheme: dark) {
     body {
-        background-color: #1e1e1e;
-        color: #d4d4d4;
+        background-color: #1a1a1a;
+        color: #e0e0e0;
     }
     
-    #editor h1, #editor h2 {
-        border-bottom-color: #313131;
+    #editor {
+        background: #2a2a2a;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+    
+    #editor h1, #editor h2, #editor h3, #editor h4, #editor h5, #editor h6 {
+        color: #f0f0f0;
+    }
+    
+    #editor h1 {
+        border-bottom-color: #3a3a3a;
+    }
+    
+    #editor h2 {
+        border-bottom-color: #353535;
+    }
+    
+    #editor h3 {
+        color: #e8e8e8;
+    }
+    
+    #editor p, #editor ul li, #editor ol li {
+        color: #c0c0c0;
+    }
+    
+    #editor strong, #editor b {
+        color: #f0f0f0;
+    }
+    
+    #editor ul li::before {
+        color: #666;
+    }
+    
+    #editor li input[type="checkbox"] {
+        border-color: #555;
+        background: #2a2a2a;
+    }
+    
+    #editor li input[type="checkbox"]:hover {
+        border-color: #777;
+    }
+    
+    #editor li input[type="checkbox"]:checked {
+        background: #5b7ff5;
+        border-color: #5b7ff5;
     }
     
     #editor blockquote {
         color: #8b949e;
-        border-left-color: #3b434b;
+        border-left-color: #444;
     }
     
     #editor code {
-        background-color: rgba(240,246,252,0.15);
+        background-color: rgba(255,255,255,0.08);
+        color: #e0e0e0;
     }
     
     #editor pre {
-        background-color: #161b22;
+        background-color: #1e1e1e;
+    }
+    
+    #editor table {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+    
+    #editor table th {
+        background-color: #242424;
+        color: #e0e0e0;
     }
     
     #editor table th,
     #editor table td {
-        border-color: #313131;
+        border-bottom-color: #3a3a3a;
     }
     
     #editor table tr {
-        background-color: #1e1e1e;
-        border-top-color: #313131;
+        background-color: #2a2a2a;
+    }
+    
+    #editor table tr:hover {
+        background-color: #323232;
     }
     
     #editor table tr:nth-child(2n) {
-        background-color: #161b22;
+        background-color: #2d2d2d;
     }
     
     #editor a {
-        color: #58a6ff;
+        color: #6a9fff;
     }
     
     #editor hr {
-        background-color: #313131;
-    }
-
-    #editor blockquote {
-        color: #8b949e;
-        border-left-color: #3b434b;
+        background: linear-gradient(to right, transparent, #3a3a3a 20%, #3a3a3a 80%, transparent);
     }
 
     /* Column layout dark theme */
     #editor .column {
-        border-right-color: rgba(255, 255, 255, 0.08);
+        background: #242424;
+        border-color: #3a3a3a;
     }
 
     #editor .column:hover {
-        background-color: rgba(255, 255, 255, 0.04);
+        background-color: #2a2a2a;
+        border-color: #444;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    #editor .column h3 {
+        color: #f0f0f0;
     }
 }
 
-/* Toolbar styles */
+/* Toolbar styles - Clay inspired */
 .toolbar {
     position: fixed;
-    top: 10px;
-    right: 10px;
-    background: #f0f0f0;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 5px;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 8px;
     display: flex;
-    gap: 5px;
+    gap: 6px;
     align-items: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     z-index: 1000;
 }
 
 .toolbar button {
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 5px 10px;
+    background: #fafafa;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    padding: 6px 12px;
     cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
+    font-size: 13px;
+    font-weight: 500;
+    color: #3a3a3a;
+    transition: all 0.2s ease;
 }
 
 .toolbar button:hover {
-    background: #e8e8e8;
-    border-color: #999;
+    background: white;
+    border-color: #d0d0d0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .toolbar button:active {
-    background: #ddd;
+    background: #f5f5f5;
+    transform: translateY(0);
 }
 
 .toolbar .separator {
     width: 1px;
     height: 20px;
-    background: #ccc;
-    margin: 0 5px;
+    background: #e8e8e8;
+    margin: 0 4px;
 }
 
 /* Dark theme toolbar */
 @media (prefers-color-scheme: dark) {
     .toolbar {
-        background: #2d2d2d;
-        border-color: #444;
+        background: rgba(42, 42, 42, 0.98);
+        border-color: #3a3a3a;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     }
     
     .toolbar button {
-        background: #3c3c3c;
-        border-color: #555;
-        color: #ccc;
+        background: #323232;
+        border-color: #444;
+        color: #d0d0d0;
     }
     
     .toolbar button:hover {
-        background: #484848;
-        border-color: #666;
+        background: #3a3a3a;
+        border-color: #555;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
     
     .toolbar button:active {
-        background: #555;
+        background: #2a2a2a;
     }
     
     .toolbar .separator {
-        background: #555;
+        background: #444;
     }
 }
